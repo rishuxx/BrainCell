@@ -72,18 +72,18 @@ export function Sidebar({ onNewChat, sessionId, isDark, onToggleTheme, onToggleS
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed top-4 left-4 z-30 flex items-center justify-center rounded-none bg-transparent p-2 text-white hover:text-pink-400 transition-colors"
+          className="fixed top-3 left-3 sm:top-4 sm:left-4 z-30 flex items-center justify-center rounded-none bg-black/40 backdrop-blur-sm sm:bg-transparent p-2 text-white hover:text-pink-400 transition-colors border border-white/10 sm:border-transparent"
           aria-label="Expand sidebar"
           title="Open Menu"
         >
-          <PanelLeftOpen className="h-6 w-6 text-white" />
+          <PanelLeftOpen className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
         </button>
       )}
 
       {/* Expanded Sidebar Panel - Proper White, Sharp Corners (rounded-none), Matrix Font */}
       <div
-        className={`fixed top-0 left-0 bottom-0 z-40 flex flex-col border-r-2 border-black bg-white text-black font-matrix transition-all duration-300 ease-in-out ${
-          isOpen ? 'w-72 translate-x-0' : '-translate-x-full w-72'
+        className={`fixed top-0 left-0 bottom-0 z-40 flex flex-col border-r-2 border-black bg-white text-black font-matrix transition-all duration-300 ease-in-out w-[85vw] max-w-[300px] sm:w-72 ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Header */}

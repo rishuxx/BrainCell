@@ -57,7 +57,7 @@ function AppLayout() {
   ) : null;
 
   return (
-    <div className="relative flex flex-col h-screen w-screen bg-gray-950 text-gray-100 overflow-hidden font-sans">
+    <div className="relative flex flex-col h-[100dvh] w-screen bg-gray-950 text-gray-100 overflow-hidden font-sans">
       {/* Animated GradientASCII Background across the entire screen */}
       <div className="absolute inset-0 z-0 pointer-events-none opacity-90">
         <GradientASCII
@@ -92,16 +92,16 @@ function AppLayout() {
       />
 
       {/* Top right user status pill */}
-      <div className="fixed top-4 right-4 z-20">
+      <div className="fixed top-3 right-3 sm:top-4 sm:right-4 z-20">
         {!authReady ? null : user ? (
-          <div className="flex items-center gap-2 rounded-none border border-black bg-white px-3 py-1 text-xs text-black font-matrix shadow-lg">
-            <span className="h-2 w-2 rounded-none bg-[#be0638] animate-pulse" />
-            <span className="truncate max-w-[140px] font-bold">{user.email}</span>
+          <div className="flex items-center gap-1.5 sm:gap-2 rounded-none border border-black bg-white px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs text-black font-matrix shadow-lg">
+            <span className="h-2 w-2 rounded-none bg-[#be0638] animate-pulse flex-shrink-0" />
+            <span className="truncate max-w-[110px] sm:max-w-[140px] font-bold">{user.email}</span>
           </div>
         ) : (
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-1.5 rounded-none border border-black bg-white px-3 py-1 text-xs text-black font-matrix shadow-lg transition-all hover:bg-[#be0638] hover:text-white"
+            className="flex items-center gap-1.5 rounded-none border border-black bg-white px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs text-black font-matrix shadow-lg transition-all hover:bg-[#be0638] hover:text-white"
           >
             <UserIcon className="h-3.5 w-3.5 text-[#be0638]" />
             <span>Sign In</span>
@@ -138,9 +138,9 @@ function AppLayout() {
           <Route path="*" element={<HomePage user={user} authReady={authReady} />} />
         </Routes>
 
-        <footer className="w-full shrink-0 px-4 py-2 font-matrix text-[9px] text-white">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-5 gap-y-1 sm:justify-between">
-            <div className="flex items-center gap-2">
+        <footer className="w-full shrink-0 px-3 sm:px-4 py-2 font-matrix text-[9px] text-white">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-4 gap-y-1 sm:justify-between">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <span>© 2026 BrainCell Inc.</span>
               <span aria-hidden="true">·</span>
               <span>Crafted by Rishu</span>
@@ -159,7 +159,7 @@ function AppLayout() {
               >
                 About BrainCell
               </button>
-              <span>Terms of Use</span>
+              <span className="hidden xs:inline">Terms of Use</span>
             </nav>
 
             <a

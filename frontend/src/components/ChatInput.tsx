@@ -75,10 +75,10 @@ export function ChatInput({ onSend, isLoading, keyOptions, selectedKey, onSelect
   const hasText = message.trim().length > 0;
 
   return (
-    <div className={`w-full transition-all ${isHero ? 'max-w-2xl' : 'max-w-3xl mx-auto'}`}>
-      <div className="relative flex flex-col rounded-3xl border border-white/10 bg-[#1e1f22]/90 shadow-2xl transition-all duration-200 focus-within:border-white/20 focus-within:bg-[#232428]/95">
+    <div className={`w-full transition-all ${isHero ? 'max-w-2xl px-2 sm:px-0' : 'max-w-3xl mx-auto'}`}>
+      <div className="relative flex flex-col rounded-2xl sm:rounded-3xl border border-white/10 bg-[#1e1f22]/90 shadow-2xl transition-all duration-200 focus-within:border-white/20 focus-within:bg-[#232428]/95">
         {/* Text Input Area */}
-        <div className="p-3.5 pb-2">
+        <div className="p-2.5 sm:p-3.5 pb-1 sm:pb-2">
           <textarea
             ref={textareaRef}
             data-testid="chat-input"
@@ -89,19 +89,19 @@ export function ChatInput({ onSend, isLoading, keyOptions, selectedKey, onSelect
             placeholder="How can I help you today?"
             disabled={isLoading}
             rows={2}
-            className="w-full resize-none bg-transparent px-2 py-1 font-matrix text-[14px] tracking-wide leading-relaxed text-gray-100 placeholder-gray-400/70 focus:outline-none disabled:opacity-50"
+            className="w-full resize-none bg-transparent px-1.5 sm:px-2 py-1 font-matrix text-[13px] sm:text-[14px] tracking-wide leading-relaxed text-gray-100 placeholder-gray-400/70 focus:outline-none disabled:opacity-50"
             aria-label="Chat message input"
           />
         </div>
 
         {/* Bottom Control Toolbar */}
-        <div className="flex items-center justify-between px-3.5 pb-3 pt-1">
+        <div className="flex items-center justify-between px-2.5 sm:px-3.5 pb-2.5 sm:pb-3 pt-1">
           {/* Left Controls: Model Switcher dropdown without star icon */}
           <div className="relative" ref={dropdownRef}>
             {singleOption ? (
-              <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-gray-200">
-                <span className="font-semibold text-white">{singleOption.provider}</span>
-                <span className="text-[11px] text-gray-400">
+              <span className="inline-flex items-center gap-1 sm:gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 sm:px-2.5 py-1 sm:py-1.5 text-[11px] sm:text-xs text-gray-200">
+                <span className="font-semibold text-white truncate max-w-[100px] sm:max-w-none">{singleOption.provider}</span>
+                <span className="text-[10px] sm:text-[11px] text-gray-400 hidden xs:inline truncate max-w-[120px] sm:max-w-none">
                   {singleOption.model === 'google/gemini-2.5-flash' ? 'Gemini 2.5 Flash' : singleOption.model}
                 </span>
               </span>
@@ -110,12 +110,12 @@ export function ChatInput({ onSend, isLoading, keyOptions, selectedKey, onSelect
               ref={buttonRef}
               type="button"
               onClick={handleToggleDropdown}
-              className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-gray-200 transition-all hover:bg-white/10 hover:border-white/20"
+              className="flex items-center gap-1 sm:gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 sm:px-2.5 py-1 sm:py-1.5 text-[11px] sm:text-xs text-gray-200 transition-all hover:bg-white/10 hover:border-white/20"
               aria-label="Select provider and key"
               aria-expanded={isModelDropdownOpen}
             >
-              <span className="font-semibold text-white">{selected.provider}</span>
-              {selected.key_id && <span className="text-[11px] text-gray-400">{selected.key_id}</span>}
+              <span className="font-semibold text-white truncate max-w-[80px] sm:max-w-none">{selected.provider}</span>
+              {selected.key_id && <span className="text-[10px] sm:text-[11px] text-gray-400">{selected.key_id}</span>}
               <ChevronDown className={`h-3 w-3 text-gray-400 transition-transform ${isModelDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
             )}
@@ -123,7 +123,7 @@ export function ChatInput({ onSend, isLoading, keyOptions, selectedKey, onSelect
             {/* Model Dropdown Menu - smart positioning: opens downward by default, flips upward when near viewport bottom */}
             {!singleOption && isModelDropdownOpen && (
               <div
-                className={`absolute left-0 z-50 w-56 rounded-2xl border border-white/15 bg-[#18191c]/95 p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-100 ${
+                className={`absolute left-0 z-50 w-56 max-w-[80vw] rounded-2xl border border-white/15 bg-[#18191c]/95 p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-100 ${
                   openUpward ? 'bottom-full mb-2' : 'top-full mt-2'
                 }`}
               >
@@ -149,7 +149,7 @@ export function ChatInput({ onSend, isLoading, keyOptions, selectedKey, onSelect
                       <span className="break-all text-[10px] text-gray-400">{option.model}</span>
                     </div>
                     {selectedKey === option.key_id && (
-                      <Check className="h-3.5 w-3.5 text-pink-400" />
+                      <Check className="h-3.5 w-3.5 text-pink-400 flex-shrink-0" />
                     )}
                   </button>
                 ))}

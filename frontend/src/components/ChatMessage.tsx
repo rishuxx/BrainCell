@@ -43,10 +43,10 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
   if (isUser) {
     return (
-      <div className="flex justify-end mb-6">
-        <div className="max-w-[85%] sm:max-w-[75%]">
-          <div className="font-matrix rounded-none bg-[#2a2b2f]/90 border border-white/10 px-4 py-2.5 text-gray-100 shadow-md">
-            <p className="text-[14.5px] leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
+      <div className="flex justify-end mb-4 sm:mb-6">
+        <div className="max-w-[90%] sm:max-w-[75%]">
+          <div className="font-matrix rounded-none bg-[#2a2b2f]/90 border border-white/10 px-3.5 sm:px-4 py-2 sm:py-2.5 text-gray-100 shadow-md">
+            <p className="text-[13.5px] sm:text-[14.5px] leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
           </div>
         </div>
       </div>
@@ -54,14 +54,14 @@ export function ChatMessage({ message }: ChatMessageProps) {
   }
 
   return (
-    <div className="flex flex-col justify-start mb-6" data-testid={isError ? undefined : 'assistant-message'}>
+    <div className="flex flex-col justify-start mb-4 sm:mb-6" data-testid={isError ? undefined : 'assistant-message'}>
       <div className="w-full max-w-none">
         {/* Assistant Response: Clean typography with natural spacing */}
         <div className="text-gray-100">
           {isError ? (
-            <div className="flex items-center gap-2 rounded-none border border-red-500/30 bg-red-950/20 px-3.5 py-2.5 text-red-300 text-sm">
+            <div className="flex items-center gap-2 rounded-none border border-red-500/30 bg-red-950/20 px-3 sm:px-3.5 py-2 sm:py-2.5 text-red-300 text-xs sm:text-sm">
               <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-400" />
-              <p>{message.content}</p>
+              <p className="break-words">{message.content}</p>
             </div>
           ) : (
             <div className="markdown-content">

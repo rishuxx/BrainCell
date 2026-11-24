@@ -74,12 +74,12 @@ function ChatSession({ sessionId, simulateFailure, userId, onChatSaved }: ChatPa
       {historyError && <p role="alert" className="p-4 text-center">{historyError}</p>}
       {messages.length === 0 ? (
         /* Empty State inside active chat session */
-        <div className="flex flex-1 flex-col items-center justify-center px-4 w-full h-full pb-8">
-          <div className="flex flex-col items-center max-w-2xl w-full text-center">
+        <div className="flex flex-1 flex-col items-center justify-center px-3 sm:px-4 w-full h-full pb-6 sm:pb-8 overflow-y-auto">
+          <div className="flex flex-col items-center max-w-2xl w-full text-center my-auto pt-8 sm:pt-0">
             <img
               src="/Brain.svg"
               alt="BrainCell Brain"
-              className="h-14 w-14 mb-2 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]"
+              className="h-12 w-12 sm:h-14 sm:w-14 mb-2 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]"
             />
             <h1 className="text-2xl sm:text-3xl font-matrix font-bold tracking-normal text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)] mb-1">
               BrainCell
@@ -101,8 +101,8 @@ function ChatSession({ sessionId, simulateFailure, userId, onChatSaved }: ChatPa
       ) : (
         /* Messages conversation thread */
         <div className="flex flex-1 flex-col h-full overflow-hidden">
-          <div className="flex-1 overflow-y-auto px-4 py-8">
-            <div className="mx-auto max-w-3xl space-y-4">
+          <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-4 sm:py-8">
+            <div className="mx-auto max-w-3xl space-y-4 pt-8 sm:pt-0">
               {messages.map((msg, i) => (
                 <ChatMessage key={i} message={msg} />
               ))}
@@ -123,7 +123,7 @@ function ChatSession({ sessionId, simulateFailure, userId, onChatSaved }: ChatPa
           </div>
 
           {/* Floating bottom input */}
-          <div className="p-4 bg-transparent">
+          <div className="p-2 sm:p-4 bg-transparent pb-3 sm:pb-4">
             <ChatInput
               onSend={handleSend}
               isLoading={isLoading}
