@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-ro
 import { Sidebar } from './components/Sidebar';
 import { Settings } from './components/Settings';
 import GradientASCII from './components/GradientASCII';
-import { User as UserIcon, ExternalLink } from 'lucide-react';
+import { User as UserIcon } from 'lucide-react';
 import { supabase } from './utils/supabase';
 import type { User } from '@supabase/supabase-js';
 
@@ -139,7 +139,7 @@ function AppLayout() {
         </Routes>
 
         <footer className="w-full shrink-0 px-3 sm:px-4 py-2 font-matrix text-[9px] text-white">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-4 gap-y-1 sm:justify-between">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-4 gap-y-1.5 sm:justify-between">
             <div className="flex items-center gap-1.5 sm:gap-2">
               <span>© 2026 BrainCell Inc.</span>
               <span aria-hidden="true">·</span>
@@ -159,18 +159,47 @@ function AppLayout() {
               >
                 About BrainCell
               </button>
-              <span className="hidden xs:inline">Terms of Use</span>
             </nav>
 
-            <a
-              href="https://x.com"
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1 hover:underline"
-            >
-              <span>Twitter/X</span>
-              <ExternalLink className="h-2.5 w-2.5" />
-            </a>
+            <div className="flex items-center gap-3">
+              <a
+                href="https://github.com/rishuxx"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 hover:underline text-white transition-opacity hover:opacity-80"
+                title="GitHub"
+              >
+                {/* Pixelated GitHub SVG icon */}
+                <svg
+                  className="h-3 w-3 fill-current"
+                  viewBox="0 0 16 16"
+                  shapeRendering="crispEdges"
+                  aria-hidden="true"
+                >
+                  <path d="M5 1h6v1H5V1zm-2 1h2v1H3V2zm10 0h-2v1h2V2zM2 3h1v2H2V3zm12 0h-1v2h1V3zM1 5h1v4H1V5zm14 0h-1v4h1V5zM2 9h1v2H2V9zm12 0h-1v2h1V9zm-2 2h-1v1h-1v1H8v-1H7v-1H4v-1h1v1h2v1h2v-1h2v-1h1v1zm1 0h1v1h-1v-1zm-9 1H3v1h1v-1zm1 1H4v1h1v-1zm-2-5h2v2H3V7zm10 0h-2v2h2V7zm-3 4v3h-1v-1H7v1H6v-3h1v1h2v-1h1z" />
+                </svg>
+                <span>GitHub</span>
+              </a>
+
+              <a
+                href="https://www.linkedin.com/in/rishuxx/"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 hover:underline text-white transition-opacity hover:opacity-80"
+                title="LinkedIn"
+              >
+                {/* Pixelated LinkedIn SVG icon */}
+                <svg
+                  className="h-3 w-3 fill-current"
+                  viewBox="0 0 16 16"
+                  shapeRendering="crispEdges"
+                  aria-hidden="true"
+                >
+                  <path d="M1 1h14v14H1V1zm1 1v12h12V2H2zm2 2h3v3H4V4zm0 4h3v6H4V8zm5 0h3v1h-3V8zm3 1h1v1h-1V9zm1 1h1v4h-3v-3h-1v3H9V8h3v1h1v1z" />
+                </svg>
+                <span>LinkedIn</span>
+              </a>
+            </div>
           </div>
         </footer>
       </div>
