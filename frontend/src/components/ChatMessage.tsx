@@ -1,6 +1,7 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
+import rehypeHighlight from 'rehype-highlight';
 import type { ChatMessage as ChatMessageType } from '../types/chat';
 import { ResponseMetadata } from './ResponseMetadata';
 import { remarkSectionLabels } from './remarkSectionLabels';
@@ -11,6 +12,22 @@ interface ChatMessageProps {
 }
 
 const markdownComponents: import('react-markdown').Components = {
+  pre({ node, children, ...props }) {
+    const code = node?.children.find((child) => child.type === 'element' && child.tagName === 'code');
+    const classes = code?.type === 'element' ? code.properties.className : undefined;
+    const language = Array.isArray(classes)
+      ? classes.find((name) => typeof name === 'string' && name.startsWith('language-'))
+      : undefined;
+
+    return (
+      <div className="markdown-code-block">
+        <div className="markdown-code-language">
+          {typeof language === 'string' ? language.slice('language-'.length) : 'Code'}
+        </div>
+        <pre {...props}>{children}</pre>
+      </div>
+    );
+  },
   table({ node: _node, ...props }) {
     return (
       <div className="markdown-table" role="region" aria-label="Response table" tabIndex={0}>
@@ -28,8 +45,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
     return (
       <div className="flex justify-end mb-6">
         <div className="max-w-[85%] sm:max-w-[75%]">
-          {/* Claude-style user pill */}
-          <div className="rounded-2xl bg-[#2a2b2f]/90 border border-white/10 px-4 py-2.5 text-gray-100 shadow-md">
+          <div className="font-matrix rounded-none bg-[#2a2b2f]/90 border border-white/10 px-4 py-2.5 text-gray-100 shadow-md">
             <p className="text-[14.5px] leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
           </div>
         </div>
@@ -49,7 +65,11 @@ export function ChatMessage({ message }: ChatMessageProps) {
             </div>
           ) : (
             <div className="markdown-content">
-              <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks, remarkSectionLabels]} components={markdownComponents}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm, remarkBreaks, remarkSectionLabels]}
+                rehypePlugins={[rehypeHighlight]}
+                components={markdownComponents}
+              >
                 {message.content}
               </ReactMarkdown>
             </div>

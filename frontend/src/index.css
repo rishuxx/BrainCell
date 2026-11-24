@@ -22,11 +22,10 @@ html, body, #root {
 /* Assistant reply typography */
 .markdown-content {
   color: #e5e7eb;
-  font-family: Charter, "Bitstream Charter", "Sitka Text", Georgia, serif;
+  font-family: ui-monospace, 'SF Mono', 'Fira Code', Menlo, Consolas, monospace;
   font-size: 1.0625rem;
   line-height: 1.7;
   overflow-wrap: anywhere;
-  border-radius: 0.75rem;
   padding: 1rem clamp(0.75rem, 3vw, 1.25rem);
   background: rgb(12 9 20 / 0.6);
 }
@@ -121,7 +120,7 @@ html, body, #root {
   margin-block-start: 0.75rem;
 }
 
-.markdown-content :is(pre, .markdown-table) {
+.markdown-content :is(.markdown-code-block, .markdown-table) {
   max-width: 100%;
   overflow-x: auto;
   border: 1px solid rgb(255 255 255 / 0.14);
@@ -129,11 +128,49 @@ html, body, #root {
   background: #16171a;
 }
 
+.markdown-content .markdown-code-language {
+  padding: 0.4rem 1rem;
+  border-block-end: 1px solid rgb(255 255 255 / 0.14);
+  color: #cbd5e1;
+  font-size: 0.75rem;
+}
+
 .markdown-content pre {
+  margin: 0;
   padding: 1rem;
-  white-space: pre;
-  overflow-wrap: normal;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  tab-size: 4;
   font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.markdown-code-block :is(.hljs-keyword, .hljs-selector-tag, .hljs-tag, .hljs-name) {
+  color: #ff9bb0;
+}
+
+.markdown-code-block :is(.hljs-string, .hljs-regexp, .hljs-addition) {
+  color: #a1e3b0;
+}
+
+.markdown-code-block :is(.hljs-number, .hljs-literal, .hljs-symbol, .hljs-meta) {
+  color: #ffca8a;
+}
+
+.markdown-code-block :is(.hljs-title, .hljs-built_in, .hljs-type, .hljs-attr) {
+  color: #c8b5ff;
+}
+
+.markdown-code-block :is(.hljs-variable, .hljs-attribute, .hljs-property, .hljs-params) {
+  color: #a9d4ff;
+}
+
+.markdown-code-block :is(.hljs-comment, .hljs-quote) {
+  color: #a1a9b5;
+}
+
+.markdown-content li > .markdown-code-block {
+  margin-block: 0.5rem;
 }
 
 .markdown-content :not(pre) > code {
