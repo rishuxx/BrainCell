@@ -171,12 +171,13 @@ function AppLayout() {
               >
                 {/* Pixelated GitHub SVG icon */}
                 <svg
-                  className="h-3 w-3 fill-current"
-                  viewBox="0 0 16 16"
-                  shapeRendering="crispEdges"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                  className="h-3.5 w-3.5 text-white fill-current"
                   aria-hidden="true"
                 >
-                  <path d="M5 1h6v1H5V1zm-2 1h2v1H3V2zm10 0h-2v1h2V2zM2 3h1v2H2V3zm12 0h-1v2h1V3zM1 5h1v4H1V5zm14 0h-1v4h1V5zM2 9h1v2H2V9zm12 0h-1v2h1V9zm-2 2h-1v1h-1v1H8v-1H7v-1H4v-1h1v1h2v1h2v-1h2v-1h1v1zm1 0h1v1h-1v-1zm-9 1H3v1h1v-1zm1 1H4v1h1v-1zm-2-5h2v2H3V7zm10 0h-2v2h2V7zm-3 4v3h-1v-1H7v1H6v-3h1v1h2v-1h1z" />
+                  <path d="M19 14h-2v2h-2v2h2v4H7v-4H3v-2H1v-2h2v2h4v-2H5v-2H3V6h2V2h4v2h6V2h4v4h2v6h-2v2ZM7 18h2v-2H7v2Z"/>
                 </svg>
                 <span>GitHub</span>
               </a>
@@ -190,12 +191,13 @@ function AppLayout() {
               >
                 {/* Pixelated LinkedIn SVG icon */}
                 <svg
-                  className="h-3 w-3 fill-current"
-                  viewBox="0 0 16 16"
-                  shapeRendering="crispEdges"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                  className="h-3.5 w-3.5 text-white fill-current"
                   aria-hidden="true"
                 >
-                  <path d="M1 1h14v14H1V1zm1 1v12h12V2H2zm2 2h3v3H4V4zm0 4h3v6H4V8zm5 0h3v1h-3V8zm3 1h1v1h-1V9zm1 1h1v4h-3v-3h-1v3H9V8h3v1h1v1z" />
+                  <path d="M20 22H4v-2H2V4h2V2h16v2h2v16h-2v2ZM7 17h2v-6H7v6Zm4 0h2v-4h2v-2h-4v6Zm4 0h2v-4h-2v4ZM7 9h2V7H7v2Z"/>
                 </svg>
                 <span>LinkedIn</span>
               </a>
