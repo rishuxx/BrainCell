@@ -14,15 +14,12 @@ COPY --from=base /usr/local/bin /usr/local/bin
 # Create non-root user
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
-# Create data directory with proper permissions
-RUN mkdir -p /data && chown appuser:appuser /data
+# Create data directory with proper permissions and grant broad access for volume mounts
+RUN mkdir -p /data && chown -R appuser:appuser /data && chmod 777 /data
 
 # Copy application
 WORKDIR /app
 COPY app/ ./app/
-
-# Switch to non-root user
-USER appuser
 
 # Expose port
 EXPOSE 8000
@@ -31,5 +28,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
-# Start server - support PORT env for Railway
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"]
+# Start server: ensure /data directory permissions on runtime mount, then run uvicorn
+CMD ["sh", "-c", "mkdir -p /data 2>/dev/null; chmod 777 /data 2>/dev/null; uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"]
