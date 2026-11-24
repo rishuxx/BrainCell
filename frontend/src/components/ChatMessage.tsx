@@ -1,12 +1,24 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 import type { ChatMessage as ChatMessageType } from '../types/chat';
 import { ResponseMetadata } from './ResponseMetadata';
-import { User, Bot, AlertCircle } from 'lucide-react';
+import { remarkSectionLabels } from './remarkSectionLabels';
+import { AlertCircle } from 'lucide-react';
 
 interface ChatMessageProps {
   message: ChatMessageType;
 }
+
+const markdownComponents: import('react-markdown').Components = {
+  table({ node: _node, ...props }) {
+    return (
+      <div className="markdown-table" role="region" aria-label="Response table" tabIndex={0}>
+        <table {...props} />
+      </div>
+    );
+  },
+};
 
 export function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === 'user';
@@ -14,13 +26,11 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
   if (isUser) {
     return (
-      <div className="flex justify-end mb-4">
-        <div className="max-w-[75%] flex items-start gap-2">
-          <div className="bg-blue-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm">
-            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-          </div>
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
-            <User className="h-4 w-4 text-white" />
+      <div className="flex justify-end mb-6">
+        <div className="max-w-[85%] sm:max-w-[75%]">
+          {/* Claude-style user pill */}
+          <div className="rounded-2xl bg-[#2a2b2f]/90 border border-white/10 px-4 py-2.5 text-gray-100 shadow-md">
+            <p className="text-[14.5px] leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
           </div>
         </div>
       </div>
@@ -28,39 +38,28 @@ export function ChatMessage({ message }: ChatMessageProps) {
   }
 
   return (
-    <div className="flex justify-start mb-4" data-testid={isError ? undefined : 'assistant-message'}>
-      <div className="max-w-[75%] flex items-start gap-2">
-        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-          isError ? 'bg-red-500' : 'bg-gradient-to-br from-purple-500 to-indigo-600'
-        }`}>
+    <div className="flex flex-col justify-start mb-6" data-testid={isError ? undefined : 'assistant-message'}>
+      <div className="w-full max-w-none">
+        {/* Assistant Response: Clean typography with natural spacing */}
+        <div className="text-gray-100">
           {isError ? (
-            <AlertCircle className="h-4 w-4 text-white" />
+            <div className="flex items-center gap-2 rounded-none border border-red-500/30 bg-red-950/20 px-3.5 py-2.5 text-red-300 text-sm">
+              <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-400" />
+              <p>{message.content}</p>
+            </div>
           ) : (
-            <Bot className="h-4 w-4 text-white" />
+            <div className="markdown-content">
+              <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks, remarkSectionLabels]} components={markdownComponents}>
+                {message.content}
+              </ReactMarkdown>
+            </div>
           )}
         </div>
-        <div>
-          <div
-            className={`rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm ${
-              isError
-                ? 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
-                : 'bg-white text-gray-900 border border-gray-200 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700'
-            }`}
-          >
-            {isError ? (
-              <p className="text-sm">{message.content}</p>
-            ) : (
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {message.content}
-                </ReactMarkdown>
-              </div>
-            )}
-          </div>
-          {!isError && message.metadata && (
-            <ResponseMetadata metadata={message.metadata} />
-          )}
-        </div>
+
+        {/* Technical Metadata below response: Matrix font */}
+        {!isError && message.metadata && (
+          <ResponseMetadata metadata={message.metadata} />
+        )}
       </div>
     </div>
   );

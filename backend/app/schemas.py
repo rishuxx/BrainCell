@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class ChatRequest(BaseModel):
@@ -11,6 +11,7 @@ class ChatRequest(BaseModel):
     session_id: str
     message: str
     system_prompt: Optional[str] = None
+    preferred_key_id: str | None = Field(default=None, pattern=r"^key_[1-9][0-9]*$", max_length=24)
 
     @field_validator("session_id")
     @classmethod
@@ -57,12 +58,19 @@ class ChatResponse(BaseModel):
     metadata: ResponseMetadata
 
 
+class KeyOption(BaseModel):
+    key_id: str
+    provider: str
+    model: str
+
+
 class HealthResponse(BaseModel):
     """Response body for GET /health."""
 
     status: str
     keys_configured: int
     cache_enabled: bool
+    key_options: list[KeyOption]
 
 
 class MessageItem(BaseModel):

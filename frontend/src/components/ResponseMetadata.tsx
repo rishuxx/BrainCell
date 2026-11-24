@@ -9,62 +9,79 @@ export function ResponseMetadata({ metadata }: ResponseMetadataProps) {
   const isCache = metadata.resolution_source === 'LLM_CACHE';
 
   return (
-    <div className="mt-2 flex flex-wrap gap-2 text-xs">
+    <div className="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 font-matrix text-[9px] text-gray-400/80 tracking-tight select-none opacity-85">
+      {/* Source (LIVE_INFERENCE / LLM_CACHE) */}
       <span
         data-testid="meta-source"
-        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium ${
-          isCache
-            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-            : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+        className={`inline-flex items-center gap-0.5 transition-colors ${
+          isCache ? 'text-emerald-400' : 'text-pink-400'
         }`}
       >
-        {isCache ? <Database className="h-3 w-3" /> : <Zap className="h-3 w-3" />}
+        {isCache ? <Database className="h-2.5 w-2.5" /> : <Zap className="h-2.5 w-2.5" />}
         {metadata.resolution_source}
       </span>
 
+      <span className="text-gray-600">·</span>
+
+      {/* Model */}
       <span
         data-testid="meta-model"
-        className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+        className="inline-flex items-center gap-0.5 text-gray-400"
       >
-        <Cpu className="h-3 w-3" />
+        <Cpu className="h-2.5 w-2.5 text-gray-500" />
         {metadata.model}
       </span>
 
+      <span className="text-gray-600">·</span>
+
+      {/* Latency */}
       <span
         data-testid="meta-latency"
-        className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+        className="inline-flex items-center gap-0.5 text-gray-400"
       >
-        <Clock className="h-3 w-3" />
+        <Clock className="h-2.5 w-2.5 text-gray-500" />
         {metadata.latency_ms} ms
       </span>
 
+      <span className="text-gray-600">·</span>
+
+      {/* In Tokens */}
       <span
         data-testid="meta-input-tokens"
-        className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+        className="inline-flex items-center gap-0.5 text-gray-400"
       >
-        <ArrowRightLeft className="h-3 w-3" />
+        <ArrowRightLeft className="h-2.5 w-2.5 text-gray-500" />
         In: {metadata.input_tokens}
       </span>
 
+      {/* Out Tokens */}
       <span
         data-testid="meta-output-tokens"
-        className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+        className="inline-flex items-center gap-0.5 text-gray-400"
       >
         Out: {metadata.output_tokens}
       </span>
 
+      {/* Key ID if present */}
       {metadata.key_id && (
-        <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2 py-0.5 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
-          <Key className="h-3 w-3" />
-          {metadata.key_id}
-        </span>
+        <>
+          <span className="text-gray-600">·</span>
+          <span className="inline-flex items-center gap-0.5 text-amber-400/85">
+            <Key className="h-2.5 w-2.5" />
+            {metadata.key_id}
+          </span>
+        </>
       )}
 
+      {/* Fallback Attempts if > 0 */}
       {metadata.fallback_attempts > 0 && (
-        <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
-          <AlertTriangle className="h-3 w-3" />
-          {metadata.fallback_attempts} fallback(s)
-        </span>
+        <>
+          <span className="text-gray-600">·</span>
+          <span className="inline-flex items-center gap-0.5 text-rose-400">
+            <AlertTriangle className="h-2.5 w-2.5" />
+            {metadata.fallback_attempts} fallback(s)
+          </span>
+        </>
       )}
     </div>
   );

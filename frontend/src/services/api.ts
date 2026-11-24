@@ -1,13 +1,45 @@
-import type { ChatRequest, ChatResponse, HealthResponse } from '../types/chat';
+import type { ChatMessage, ChatRequest, ChatResponse, HealthResponse } from '../types/chat';
+import { supabase } from '../utils/supabase';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
+async function accountHeaders(userId?: string): Promise<Record<string, string>> {
+  if (!userId) return {};
+  const { data: { session }, error } = await supabase.auth.getSession();
+  if (error || !session || session.user.id !== userId) throw new Error('Sign in again to access your chats.');
+  return { Authorization: `Bearer ${session.access_token}` };
+}
+
+export interface SavedChat {
+  session_id: string;
+  title: string;
+  updated_at: string;
+}
+
+export async function listSavedChats(userId: string, signal: AbortSignal): Promise<SavedChat[]> {
+  const headers = await accountHeaders(userId);
+  const response = await fetch(`${API_BASE}/sessions`, { headers, signal });
+  if (!response.ok) throw new Error('Could not load saved chats.');
+  return (await response.json()).sessions;
+}
+
+export async function deleteSavedChat(userId: string, sessionId: string): Promise<void> {
+  const headers = await accountHeaders(userId);
+  const response = await fetch(`${API_BASE}/sessions/${encodeURIComponent(sessionId)}`, {
+    method: 'DELETE',
+    headers,
+  });
+  if (!response.ok) throw new Error('Could not delete this chat. Reopen the sidebar and try again.');
+}
 
 export async function sendMessage(
   request: ChatRequest,
   simulateFailure?: string,
+  userId?: string,
 ): Promise<ChatResponse> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    ...await accountHeaders(userId),
   };
 
   if (simulateFailure) {
@@ -28,17 +60,21 @@ export async function sendMessage(
   return res.json();
 }
 
-export async function getHealth(): Promise<HealthResponse> {
-  const res = await fetch(`${API_BASE}/health`);
+export async function getHealth(signal?: AbortSignal): Promise<HealthResponse> {
+  const res = await fetch(`${API_BASE}/health`, { signal });
   if (!res.ok) throw new Error(`Health check failed: ${res.status}`);
   return res.json();
 }
 
-export async function getSessionMessages(sessionId: string) {
-  const res = await fetch(`${API_BASE}/sessions/${encodeURIComponent(sessionId)}/messages`);
+export async function getSessionMessages(sessionId: string, signal: AbortSignal, userId?: string): Promise<ChatMessage[]> {
+  const headers = await accountHeaders(userId);
+  const res = await fetch(`${API_BASE}/sessions/${encodeURIComponent(sessionId)}/messages`, { signal, headers });
+  if (res.status === 404) return [];
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
     throw new Error(errorBody.detail || `HTTP ${res.status}`);
   }
-  return res.json();
+  const { messages } = await res.json();
+  if (!Array.isArray(messages)) throw new Error('Invalid chat history response');
+  return messages;
 }

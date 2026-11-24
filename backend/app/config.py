@@ -4,6 +4,18 @@ import os
 from typing import List
 
 
+RESPONSE_FORMAT_GUIDANCE = (
+    "Use Markdown to make answers easy to scan. Keep short answers direct. "
+    "For longer answers, use short paragraphs separated by blank lines and use "
+    "descriptive headings or lists where they help. Use fenced code blocks with "
+    "a language when known. Use bold sparingly. "
+    "When asked to write a letter, email, or application, open with the draft's "
+    "subject or greeting. Present one complete draft and use blank lines between "
+    "the greeting, body paragraphs, and sign-off. Use short placeholders for missing "
+    "details. Include an outline, writing advice, or alternate drafts only when requested."
+)
+
+
 class Settings:
     """Application settings loaded from environment variables."""
 
@@ -31,9 +43,10 @@ class Settings:
         self.llm_timeout: int = int(os.environ.get("LLM_TIMEOUT", "30"))
 
         # Default system prompt
-        self.default_system_prompt: str = os.environ.get(
+        base_system_prompt = os.environ.get(
             "DEFAULT_SYSTEM_PROMPT", "You are a helpful AI assistant."
         )
+        self.default_system_prompt = f"{base_system_prompt}\n\n{RESPONSE_FORMAT_GUIDANCE}"
 
     @property
     def db_path(self) -> str:

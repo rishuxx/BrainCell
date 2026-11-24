@@ -1,53 +1,117 @@
-import { useState, useEffect, useRef } from 'react';
-import { useChat } from './hooks/useChat';
-import { ChatMessage } from './components/ChatMessage';
-import { ChatInput } from './components/ChatInput';
+import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { Settings } from './components/Settings';
-import { Bot, Sparkles } from 'lucide-react';
+import GradientASCII from './components/GradientASCII';
+import { User as UserIcon, ExternalLink } from 'lucide-react';
+import { supabase } from './utils/supabase';
+import type { User } from '@supabase/supabase-js';
 
-function App() {
-  const { messages, isLoading, sessionId, systemPrompt, setSystemPrompt, send, newChat } = useChat();
+import { HomePage } from './pages/HomePage';
+import { AboutPage } from './pages/AboutPage';
+import { ChatPage } from './pages/ChatPage';
+
+function AppLayout() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [isDark, setIsDark] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [systemPrompt, setSystemPrompt] = useState('');
   const [simulateFailure, setSimulateFailure] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [historyVersion, setHistoryVersion] = useState(0);
+
+  // Supabase Auth listener
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setAuthReady(true);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Apply dark mode
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
   }, [isDark]);
 
-  // Auto-scroll to bottom on new messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  // Extract current session ID if on /chat/:sessionId route
+  const pathParts = location.pathname.split('/');
+  const currentSessionId = pathParts[1] === 'chat' && pathParts[2] ? pathParts[2] : 'new';
 
-  const handleSend = (message: string, simFailure?: string) => {
-    send(message, simFailure);
+  const handleNewChat = () => {
+    const freshId = crypto.randomUUID();
+    navigate(`/chat/${freshId}`);
   };
-
-  const starterPrompts = [
-    'What is the capital of France?',
-    'Explain quantum computing in simple terms',
-    'Write a haiku about programming',
-    'What are the benefits of TypeScript?',
-  ];
+  const chatPage = authReady ? (
+    <ChatPage
+      simulateFailure={simulateFailure}
+      userId={user?.id}
+      onChatSaved={() => setHistoryVersion((version) => version + 1)}
+    />
+  ) : null;
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-950">
-      {/* Sidebar */}
+    <div className="relative flex flex-col h-screen w-screen bg-gray-950 text-gray-100 overflow-hidden font-sans">
+      {/* Animated GradientASCII Background across the entire screen */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-90">
+        <GradientASCII
+          colors={["#be0638", "#ff5e79", "#fc6f81", "#fff1f2"]}
+          shape="rise"
+          characters=" =+xX0S8#@"
+          cellSize={22}
+          density={0.8}
+          glyphOpacity={0.67}
+          depthOfField={0.47}
+          flicker={0.15}
+          scale={1.35}
+          flow={1.25}
+          gradientOpacity={0.84}
+          grain={0.15}
+          variation={15}
+          scrambleRadius={0.16}
+        />
+      </div>
+
+      {/* Floating / Collapsible Sidebar with Real Routing */}
       <Sidebar
-        onNewChat={newChat}
-        sessionId={sessionId}
+        key={user?.id ?? 'guest'}
+        historyVersion={historyVersion}
+        onNewChat={handleNewChat}
+        sessionId={currentSessionId}
         isDark={isDark}
         onToggleTheme={() => setIsDark(!isDark)}
         onToggleSettings={() => setShowSettings(!showSettings)}
+        onOpenAuth={() => navigate('/')}
+        user={user}
       />
 
-      {/* Main chat area */}
-      <div className="flex flex-1 flex-col min-w-0">
-        {/* Settings panel */}
+      {/* Top right user status pill */}
+      <div className="fixed top-4 right-4 z-20">
+        {!authReady ? null : user ? (
+          <div className="flex items-center gap-2 rounded-none border border-black bg-white px-3 py-1 text-xs text-black font-matrix shadow-lg">
+            <span className="h-2 w-2 rounded-none bg-[#be0638] animate-pulse" />
+            <span className="truncate max-w-[140px] font-bold">{user.email}</span>
+          </div>
+        ) : (
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-1.5 rounded-none border border-black bg-white px-3 py-1 text-xs text-black font-matrix shadow-lg transition-all hover:bg-[#be0638] hover:text-white"
+          >
+            <UserIcon className="h-3.5 w-3.5 text-[#be0638]" />
+            <span>Sign In</span>
+          </button>
+        )}
+      </div>
+
+      {/* Main Routed Area */}
+      <div className="relative z-10 flex flex-1 flex-col h-full w-full min-w-0 bg-transparent">
+        {/* Settings modal */}
         {showSettings && (
           <Settings
             systemPrompt={systemPrompt}
@@ -58,75 +122,66 @@ function App() {
           />
         )}
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-3xl px-4 py-6">
-            {messages.length === 0 ? (
-              /* Empty state */
-              <div className="flex flex-col items-center justify-center h-full pt-20">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mb-6 shadow-lg">
-                  <Bot className="h-8 w-8 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">
-                  Lyftr AI Chat
-                </h2>
-                <p className="text-gray-500 dark:text-gray-400 mb-8 text-center max-w-md">
-                  Ask me anything. I'll respond with detailed answers, complete with metadata about how your request was processed.
-                </p>
+        {/* Routes View */}
+        <Routes>
+          {/* Route 1: / -> Official Landing / Homepage */}
+          <Route path="/" element={<HomePage user={user} authReady={authReady} />} />
 
-                {/* Starter prompts */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
-                  {starterPrompts.map((prompt, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleSend(prompt, simulateFailure)}
-                      className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-left text-sm
-                                 text-gray-700 transition-all hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm
-                                 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                    >
-                      <Sparkles className="h-4 w-4 text-purple-500 flex-shrink-0" />
-                      {prompt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              /* Messages */
-              <>
-                {messages.map((msg, i) => (
-                  <ChatMessage key={i} message={msg} />
-                ))}
-                {isLoading && (
-                  <div className="flex justify-start mb-4">
-                    <div className="flex items-start gap-2">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
-                        <Bot className="h-4 w-4 text-white" />
-                      </div>
-                      <div className="rounded-2xl rounded-tl-sm bg-white border border-gray-200 px-4 py-3 shadow-sm dark:bg-gray-800 dark:border-gray-700">
-                        <div className="flex gap-1">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </>
-            )}
+          {/* Route 2: /about -> Dedicated About BrainCell & Developer Rishu */}
+          <Route path="/about" element={<AboutPage />} />
+
+          {/* Route 3: /chat/:sessionId -> Chat Session with URL ID */}
+          <Route path="/chat/:sessionId" element={chatPage} />
+          <Route path="/chat" element={chatPage} />
+
+          {/* Fallback to Home */}
+          <Route path="*" element={<HomePage user={user} authReady={authReady} />} />
+        </Routes>
+
+        <footer className="w-full shrink-0 px-4 py-2 font-matrix text-[9px] text-white">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-5 gap-y-1 sm:justify-between">
+            <div className="flex items-center gap-2">
+              <span>© 2026 BrainCell Inc.</span>
+              <span aria-hidden="true">·</span>
+              <span>Crafted by Rishu</span>
+            </div>
+
+            <nav aria-label="Footer" className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+              <button
+                onClick={() => navigate('/')}
+                className="hover:underline"
+              >
+                Home
+              </button>
+              <button
+                onClick={() => navigate('/about')}
+                className="hover:underline"
+              >
+                About BrainCell
+              </button>
+              <span>Terms of Use</span>
+            </nav>
+
+            <a
+              href="https://x.com"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 hover:underline"
+            >
+              <span>Twitter/X</span>
+              <ExternalLink className="h-2.5 w-2.5" />
+            </a>
           </div>
-        </div>
-
-        {/* Input */}
-        <ChatInput
-          onSend={handleSend}
-          isLoading={isLoading}
-          simulateFailure={simulateFailure}
-        />
+        </footer>
       </div>
     </div>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppLayout />
+    </BrowserRouter>
+  );
+}

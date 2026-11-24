@@ -12,6 +12,10 @@ from .config import settings
 _connection: Optional[sqlite3.Connection] = None
 
 
+class SessionAccessDenied(Exception):
+    """The requested session belongs to another identity or has unknown ownership."""
+
+
 def get_db_path() -> str:
     """Get the resolved database file path."""
     return settings.db_path
@@ -59,6 +63,21 @@ def init_db():
         )
     """)
 
+    _connection.execute("""
+        CREATE TABLE IF NOT EXISTS chat_owners (
+            session_id TEXT PRIMARY KEY,
+            user_id TEXT,
+            title TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+    """)
+    _connection.execute("""
+        CREATE INDEX IF NOT EXISTS idx_chat_owners_user_activity
+        ON chat_owners(user_id, updated_at DESC, session_id)
+    """)
+    _connection.execute("""
+        CREATE TABLE IF NOT EXISTS deleted_chats (session_id TEXT PRIMARY KEY)
+    """)
     _connection.commit()
 
 
@@ -88,12 +107,14 @@ def is_db_reachable() -> bool:
         return False
 
 
-def get_session_messages(session_id: str) -> List[Dict[str, Any]]:
+def get_session_messages(session_id: str, user_id: str | None) -> List[Dict[str, Any]]:
     """Get all messages for a session, ordered by id ascending."""
     conn = get_connection()
     cursor = conn.execute(
-        "SELECT role, content, metadata FROM messages WHERE session_id = ? ORDER BY id ASC",
-        (session_id,),
+        """SELECT m.role, m.content, m.metadata FROM messages m
+           JOIN chat_owners o ON o.session_id = m.session_id
+           WHERE m.session_id = ? AND o.user_id IS ? ORDER BY m.id ASC""",
+        (session_id, user_id),
     )
     rows = cursor.fetchall()
     messages = []
@@ -115,11 +136,57 @@ def session_exists(session_id: str) -> bool:
     return cursor.fetchone() is not None
 
 
+def check_session_access(session_id: str, user_id: str | None) -> None:
+    if get_connection().execute(
+        "SELECT 1 FROM deleted_chats WHERE session_id = ?", (session_id,)
+    ).fetchone():
+        raise SessionAccessDenied()
+
+    row = get_connection().execute(
+        "SELECT user_id FROM chat_owners WHERE session_id = ?", (session_id,)
+    ).fetchone()
+    if row is None:
+        if session_exists(session_id) or get_connection().execute(
+            "SELECT 1 FROM sessions WHERE session_id = ?", (session_id,)
+        ).fetchone():
+            raise SessionAccessDenied()
+    elif row["user_id"] != user_id:
+        raise SessionAccessDenied()
+
+
+def list_account_chats(user_id: str) -> list[dict]:
+    rows = get_connection().execute(
+        """SELECT session_id, title, updated_at FROM chat_owners
+           WHERE user_id = ? ORDER BY updated_at DESC, session_id""",
+        (user_id,),
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def delete_account_chat(session_id: str, user_id: str) -> bool:
+    """Remove the owned chat and prevent late requests from recreating it."""
+    conn = get_connection()
+    conn.execute("BEGIN IMMEDIATE")
+    with conn:
+        deleted = conn.execute(
+            "DELETE FROM chat_owners WHERE session_id = ? AND user_id = ?",
+            (session_id, user_id),
+        )
+        if deleted.rowcount == 0:
+            return False
+        conn.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
+        conn.execute("DELETE FROM sessions WHERE session_id = ?", (session_id,))
+        conn.execute("INSERT INTO deleted_chats (session_id) VALUES (?)", (session_id,))
+    return True
+
+
 def save_message_pair(
     session_id: str,
     user_content: str,
     assistant_content: str,
     metadata: Dict[str, Any],
+    user_id: str | None = None,
+    system_prompt: str | None = None,
 ):
     """Atomically save a user/assistant message pair."""
     conn = get_connection()
@@ -128,6 +195,20 @@ def save_message_pair(
 
     conn.execute("BEGIN IMMEDIATE")
     try:
+        check_session_access(session_id, user_id)
+        conn.execute(
+            """INSERT INTO chat_owners (session_id, user_id, title, updated_at)
+               VALUES (?, ?, ?, ?)
+               ON CONFLICT(session_id) DO UPDATE SET updated_at = excluded.updated_at""",
+            (session_id, user_id, " ".join(user_content.split())[:80], now),
+        )
+        if system_prompt is not None:
+            conn.execute(
+                """INSERT INTO sessions (session_id, system_prompt, created_at)
+                   VALUES (?, ?, ?) ON CONFLICT(session_id)
+                   DO UPDATE SET system_prompt = excluded.system_prompt""",
+                (session_id, system_prompt, now),
+            )
         conn.execute(
             "INSERT INTO messages (session_id, role, content, metadata, created_at) VALUES (?, ?, ?, ?, ?)",
             (session_id, "user", user_content, None, now),
@@ -142,27 +223,16 @@ def save_message_pair(
         raise
 
 
-def get_session_system_prompt(session_id: str) -> Optional[str]:
+def get_session_system_prompt(session_id: str, user_id: str | None) -> Optional[str]:
     """Get the stored system prompt for a session."""
     conn = get_connection()
     cursor = conn.execute(
-        "SELECT system_prompt FROM sessions WHERE session_id = ?",
-        (session_id,),
+        """SELECT s.system_prompt FROM sessions s
+           JOIN chat_owners o ON o.session_id = s.session_id
+           WHERE s.session_id = ? AND o.user_id IS ?""",
+        (session_id, user_id),
     )
     row = cursor.fetchone()
     if row:
         return row["system_prompt"]
     return None
-
-
-def set_session_system_prompt(session_id: str, system_prompt: str):
-    """Set or update the system prompt for a session."""
-    conn = get_connection()
-    now = datetime.now(timezone.utc).isoformat()
-    conn.execute(
-        """INSERT INTO sessions (session_id, system_prompt, created_at)
-           VALUES (?, ?, ?)
-           ON CONFLICT(session_id) DO UPDATE SET system_prompt = ?""",
-        (session_id, system_prompt, now, system_prompt),
-    )
-    conn.commit()

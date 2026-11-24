@@ -1,22 +1,167 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'MatrixType';
+  src: url('./assets/matrixtype.display-bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-matrix {
+  font-family: 'MatrixType', monospace;
+  letter-spacing: 0.05em;
+}
+
 /* Base styles */
 html, body, #root {
   height: 100%;
   margin: 0;
 }
 
-/* Markdown code blocks */
-.prose pre {
-  @apply bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto text-sm;
+/* Assistant reply typography */
+.markdown-content {
+  color: #e5e7eb;
+  font-family: Charter, "Bitstream Charter", "Sitka Text", Georgia, serif;
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  border-radius: 0.75rem;
+  padding: 1rem clamp(0.75rem, 3vw, 1.25rem);
+  background: rgb(12 9 20 / 0.6);
 }
 
-.prose code {
-  @apply bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono;
+.reply-dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
-.prose pre code {
-  @apply bg-transparent p-0;
+.reply-dots > span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #fb7185;
+  opacity: 0.75;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reply-dots > :is(:nth-child(2), :nth-child(4)) {
+    animation: reply-dot-pulse 1s ease-in-out infinite;
+  }
+
+  .reply-dots > :nth-child(4) {
+    animation-delay: 180ms;
+  }
+}
+
+@keyframes reply-dot-pulse {
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+.markdown-content > * + * {
+  margin-block-start: 1rem;
+}
+
+.markdown-content :is(h1, h2, h3, h4, h5, h6) {
+  color: #fff;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.markdown-content > * + :is(h1, h2, h3, h4, h5, h6) {
+  margin-block-start: 1.6rem;
+}
+
+.markdown-content > :is(h1, h2, h3, h4, h5, h6) + * {
+  margin-block-start: 0.5rem;
+}
+
+.markdown-content h1 { font-size: 1.5rem; }
+.markdown-content h2 { font-size: 1.25rem; }
+.markdown-content h3 { font-size: 1.125rem; }
+
+.markdown-content strong {
+  color: #fff;
+  font-weight: 650;
+}
+
+.markdown-content :is(ul, ol) {
+  padding-inline-start: 1.5rem;
+}
+
+.markdown-content ul { list-style: disc; }
+.markdown-content ol { list-style: decimal; }
+.markdown-content ul ul { list-style: circle; }
+.markdown-content li + li { margin-block-start: 0.35rem; }
+.markdown-content li > * + * { margin-block-start: 0.5rem; }
+.markdown-content .task-list-item { list-style: none; }
+
+.markdown-content a {
+  color: #fda4af;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.markdown-content hr {
+  border: 0;
+  border-block-start: 1px solid rgb(255 255 255 / 0.18);
+}
+
+.markdown-content blockquote {
+  border-inline-start: 3px solid #f43f5e;
+  padding-inline-start: 1rem;
+  color: #cbd5e1;
+}
+
+.markdown-content blockquote > * + * {
+  margin-block-start: 0.75rem;
+}
+
+.markdown-content :is(pre, .markdown-table) {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 0.65rem;
+  background: #16171a;
+}
+
+.markdown-content pre {
+  padding: 1rem;
+  white-space: pre;
+  overflow-wrap: normal;
+  font-size: 0.875rem;
+}
+
+.markdown-content :not(pre) > code {
+  border-radius: 0.25rem;
+  padding: 0.15em 0.35em;
+  background: rgb(255 255 255 / 0.1);
+  color: #fda4af;
+  font-size: 0.875em;
+}
+
+.markdown-content table {
+  width: 100%;
+  min-width: max-content;
+  font-size: 0.9375rem;
+}
+
+.markdown-content :is(th, td) {
+  padding: 0.55rem 0.85rem;
+  text-align: start;
+}
+
+.markdown-content th {
+  background: rgb(255 255 255 / 0.06);
+  color: #fff;
+}
+
+.markdown-content td {
+  border-block-start: 1px solid rgb(255 255 255 / 0.12);
 }
 
 /* Scrollbar styling */
@@ -29,10 +174,6 @@ html, body, #root {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: rgba(155, 155, 155, 0.5);
+  background-color: rgba(155, 155, 155, 0.3);
   border-radius: 20px;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background-color: rgba(100, 100, 100, 0.5);
 }

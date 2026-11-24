@@ -46,6 +46,18 @@ class LLMService:
         """Return safe key identifier like key_1, key_2, etc."""
         return f"key_{index + 1}"
 
+    def key_options(self) -> list[dict[str, str]]:
+        provider, _, model_name = self._model.partition("/")
+        provider_label = {"openrouter": "OpenRouter", "gemini": "Google Gemini"}.get(provider, provider)
+        return [
+            {
+                "key_id": self._key_id(index),
+                "provider": provider_label,
+                "model": model_name or self._model,
+            }
+            for index in range(len(self._keys))
+        ]
+
     def _parse_simulation_header(self, header_value: Optional[str]) -> Dict[str, int]:
         """Parse X-Simulate-Failure header into {key_id: status_code} map.
 
@@ -87,6 +99,7 @@ class LLMService:
         self,
         messages: List[Dict[str, str]],
         simulate_failure: Optional[str] = None,
+        preferred_key_id: str | None = None,
     ) -> Dict[str, Any]:
         """Send chat completion with failover and caching.
 
@@ -103,6 +116,8 @@ class LLMService:
         # Try each key in order
         for i, api_key in enumerate(self._keys):
             key_id = self._key_id(i)
+            if preferred_key_id and key_id != preferred_key_id:
+                continue
 
             # Check simulation
             if key_id in simulations:
@@ -116,7 +131,7 @@ class LLMService:
                 # Call LiteLLM completion
                 # For simulation requests, bypass cache to test failover properly
                 cache_params = {}
-                if is_simulation:
+                if is_simulation or preferred_key_id:
                     cache_params = {"cache": {"no-cache": True, "no-store": True}}
 
                 response = await litellm.acompletion(
@@ -124,6 +139,7 @@ class LLMService:
                     messages=messages,
                     api_key=api_key,
                     timeout=self._timeout,
+                    max_tokens=2000,
                     num_retries=0,  # We handle retries ourselves at key level
                     **cache_params,
                 )
@@ -170,7 +186,7 @@ class LLMService:
                     "input_tokens": input_tokens,
                     "output_tokens": output_tokens,
                     "key_id": None if is_cache_hit else key_id,
-                    "fallback_attempts": fallback_attempts,
+                    "fallback_attempts": 0 if is_cache_hit else fallback_attempts,
                 }
 
             except Exception as e:
@@ -185,11 +201,11 @@ class LLMService:
                     if "Simulated" not in error_str:
                         fallback_attempts += 1
                     last_error = e
-                    logger.warning(f"Key {key_id} failed with retryable error: {error_str}")
+                    logger.warning("Key %s failed with %s", key_id, type(e).__name__)
                     continue
                 else:
                     # Non-retryable error (e.g., bad request) - don't try other keys
-                    logger.error(f"Key {key_id} failed with non-retryable error: {error_str}")
+                    logger.warning("Key %s failed with %s", key_id, type(e).__name__)
                     raise
 
         # All keys exhausted

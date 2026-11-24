@@ -7,6 +7,42 @@ from tests.conftest import make_mock_response
 
 
 @pytest.mark.asyncio
+async def test_preferred_key_uses_configured_model_and_selected_slot(client, monkeypatch):
+    from app.services.llm import llm_service
+
+    monkeypatch.setattr(llm_service, "_keys", ["fixture-primary", "fixture-secondary"])
+    monkeypatch.setattr(llm_service, "_model", "openrouter/google/gemini-2.5-flash")
+    options = (await client.get("/health")).json()["key_options"]
+    assert options[1] == {"key_id": "key_2", "provider": "OpenRouter", "model": "google/gemini-2.5-flash"}
+    with patch("litellm.acompletion", new_callable=AsyncMock, return_value=make_mock_response(model=options[1]["model"])) as complete:
+        response = await client.post("/chat", json={
+            "session_id": "manual-key", "message": "Hello", "preferred_key_id": "key_2",
+        })
+        assert response.status_code == 200
+        assert response.json()["metadata"]["key_id"] == "key_2"
+        assert response.json()["metadata"]["model"] == options[1]["model"]
+        assert complete.await_count == 1
+        assert complete.call_args.kwargs["api_key"] == "fixture-secondary"
+        assert complete.call_args.kwargs["model"] == "openrouter/google/gemini-2.5-flash"
+        assert complete.call_args.kwargs["cache"] == {"no-cache": True, "no-store": True}
+        unknown = await client.post("/chat", json={
+            "session_id": "unknown-key", "message": "Hello", "preferred_key_id": "key_99",
+        })
+        assert unknown.status_code == 422
+        assert complete.await_count == 1
+
+        denied = PermissionError("provider fixture")
+        denied.status_code = 403
+        complete.side_effect = denied
+        rejected = await client.post("/chat", json={
+            "session_id": "rejected-key", "message": "Hello", "preferred_key_id": "key_2",
+        })
+        assert rejected.status_code == 503
+        assert "Check that key's access and billing" in rejected.json()["detail"]
+        assert complete.await_count == 2
+
+
+@pytest.mark.asyncio
 async def test_primary_failure_fallback(client: AsyncClient):
     """When primary key fails, backup key succeeds."""
     mock_resp = make_mock_response("Fallback response")

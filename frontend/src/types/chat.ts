@@ -19,6 +19,7 @@ export interface ChatRequest {
   session_id: string;
   message: string;
   system_prompt?: string;
+  preferred_key_id?: string;
 }
 
 export interface ChatResponse {
@@ -31,6 +32,13 @@ export interface HealthResponse {
   status: string;
   keys_configured: number;
   cache_enabled: boolean;
+  key_options: KeyOption[];
+}
+
+export interface KeyOption {
+  key_id: string;
+  provider: string;
+  model: string;
 }
 
 export interface ErrorResponse {

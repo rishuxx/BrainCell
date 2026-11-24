@@ -48,7 +48,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Lyftr AI Chat",
+    title="BrainCell AI",
     version="1.0.0",
     lifespan=lifespan,
     docs_url=None,  # Disable docs in production (3-endpoint constraint)
@@ -60,8 +60,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "X-Simulate-Failure"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Simulate-Failure"],
 )
 
 # Register routes (no /api prefix)

@@ -20,6 +20,7 @@ async def health_check():
             status="degraded",
             keys_configured=llm_service.key_count,
             cache_enabled=llm_service.cache_enabled,
+            key_options=llm_service.key_options(),
         )
 
     if llm_service.key_count < 2:
@@ -27,10 +28,12 @@ async def health_check():
             status="degraded",
             keys_configured=llm_service.key_count,
             cache_enabled=llm_service.cache_enabled,
+            key_options=llm_service.key_options(),
         )
 
     return HealthResponse(
         status="ok",
         keys_configured=llm_service.key_count,
         cache_enabled=llm_service.cache_enabled,
+        key_options=llm_service.key_options(),
     )

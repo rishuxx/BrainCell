@@ -1,78 +1,66 @@
-import { useState, useCallback, useRef } from 'react';
-import type { ChatMessage, ChatResponse } from '../types/chat';
-import { sendMessage } from '../services/api';
+﻿import { useEffect, useRef, useState } from 'react';
+import type { ChatMessage } from '../types/chat';
+import { getSessionMessages, sendMessage } from '../services/api';
 
-export function useChat() {
+export function useChat(sessionId: string, userId?: string, onChatSaved?: () => void) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
-  const [systemPrompt, setSystemPrompt] = useState('');
-  const sessionIdRef = useRef(sessionId);
+  const [isRestoring, setIsRestoring] = useState(true);
+  const [historyError, setHistoryError] = useState('');
+  const sending = useRef(false);
 
-  const send = useCallback(
-    async (message: string, simulateFailure?: string) => {
-      if (!message.trim() || isLoading) return;
+  useEffect(() => {
+    const controller = new AbortController();
 
-      const currentSessionId = sessionIdRef.current;
+    getSessionMessages(sessionId, controller.signal, userId)
+      .then((history) => {
+        if (!controller.signal.aborted) setMessages(history);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setHistoryError('Could not load chat history. Reload to try again.');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsRestoring(false);
+      });
 
-      // Add user message
-      const userMsg: ChatMessage = { role: 'user', content: message.trim() };
-      setMessages((prev) => [...prev, userMsg]);
-      setIsLoading(true);
+    return () => controller.abort();
+  }, [sessionId, userId]);
 
-      try {
-        const response: ChatResponse = await sendMessage(
-          {
-            session_id: currentSessionId,
-            message: message.trim(),
-            ...(systemPrompt ? { system_prompt: systemPrompt } : {}),
-          },
-          simulateFailure || undefined,
-        );
+  async function send(message: string, simulateFailure?: string, preferredKeyId?: string) {
+    const content = message.trim();
+    if (!content || isRestoring || sending.current) return;
 
-        // If session changed while waiting, discard stale response
-        if (sessionIdRef.current !== currentSessionId) return;
+    sending.current = true;
+    setIsLoading(true);
+    setMessages((previous) => [...previous, { role: 'user', content }]);
 
-        const assistantMsg: ChatMessage = {
-          role: 'assistant',
-          content: response.reply,
-          metadata: response.metadata,
-        };
-        setMessages((prev) => [...prev, assistantMsg]);
-      } catch (error: any) {
-        // If session changed while waiting, discard stale response
-        if (sessionIdRef.current !== currentSessionId) return;
+    try {
+      const response = await sendMessage(
+        {
+          session_id: sessionId,
+          message: content,
+          ...(preferredKeyId ? { preferred_key_id: preferredKeyId } : {}),
+        },
+        simulateFailure || undefined,
+        userId,
+      );
+      setMessages((previous) => [...previous, {
+        role: 'assistant',
+        content: response.reply,
+        metadata: response.metadata,
+      }]);
+      if (userId) onChatSaved?.();
+    } catch (error) {
+      setMessages((previous) => [...previous, {
+        role: 'assistant',
+        content: error instanceof Error ? error.message : 'An unexpected error occurred',
+        isError: true,
+      }]);
+    } finally {
+      sending.current = false;
+      setIsLoading(false);
+    }
+  }
 
-        const errorMsg: ChatMessage = {
-          role: 'assistant',
-          content: error.message || 'An unexpected error occurred',
-          isError: true,
-        };
-        setMessages((prev) => [...prev, errorMsg]);
-      } finally {
-        if (sessionIdRef.current === currentSessionId) {
-          setIsLoading(false);
-        }
-      }
-    },
-    [isLoading, systemPrompt],
-  );
-
-  const newChat = useCallback(() => {
-    const newId = crypto.randomUUID();
-    setSessionId(newId);
-    sessionIdRef.current = newId;
-    setMessages([]);
-    setIsLoading(false);
-  }, []);
-
-  return {
-    messages,
-    isLoading,
-    sessionId,
-    systemPrompt,
-    setSystemPrompt,
-    send,
-    newChat,
-  };
+  return { messages, isLoading, isRestoring, historyError, send };
 }
