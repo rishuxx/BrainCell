@@ -69,13 +69,13 @@ function ChatSession({ sessionId, simulateFailure, userId, onChatSaved }: ChatPa
   };
 
   return (
-    <div className="flex flex-1 flex-col h-full overflow-hidden w-full">
+    <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden w-full">
       {isRestoring && <p role="status" className="p-4 text-center">Loading chat history…</p>}
       {historyError && <p role="alert" className="p-4 text-center">{historyError}</p>}
       {messages.length === 0 ? (
         /* Empty State inside active chat session */
-        <div className="flex flex-1 flex-col items-center justify-center px-3 sm:px-4 w-full h-full pb-6 sm:pb-8 overflow-y-auto">
-          <div className="flex flex-col items-center max-w-2xl w-full text-center my-auto pt-8 sm:pt-0">
+        <div className="flex flex-1 flex-col items-center justify-center px-3 sm:px-4 w-full h-full pb-6 sm:pb-8 overflow-hidden">
+          <div className="flex flex-col items-center max-w-2xl w-full text-center my-auto">
             <img
               src="/Brain.svg"
               alt="BrainCell Brain"
@@ -100,8 +100,8 @@ function ChatSession({ sessionId, simulateFailure, userId, onChatSaved }: ChatPa
         </div>
       ) : (
         /* Messages conversation thread */
-        <div className="flex flex-1 flex-col h-full overflow-hidden">
-          <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-4 sm:py-8">
+        <div className="flex flex-1 flex-col h-full min-h-0 overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-4 sm:py-8 overscroll-contain">
             <div className="mx-auto max-w-3xl space-y-4 pt-8 sm:pt-0">
               {messages.map((msg, i) => (
                 <ChatMessage key={i} message={msg} />
@@ -123,7 +123,7 @@ function ChatSession({ sessionId, simulateFailure, userId, onChatSaved }: ChatPa
           </div>
 
           {/* Floating bottom input */}
-          <div className="p-2 sm:p-4 bg-transparent pb-3 sm:pb-4">
+          <div className="p-2 sm:p-4 bg-transparent pb-3 sm:pb-4 flex-shrink-0">
             <ChatInput
               onSend={handleSend}
               isLoading={isLoading}

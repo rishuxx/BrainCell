@@ -57,9 +57,9 @@ function AppLayout() {
   ) : null;
 
   return (
-    <div className="relative flex flex-col h-[100dvh] w-screen bg-gray-950 text-gray-100 overflow-hidden font-sans">
+    <div className="fixed inset-0 flex flex-col h-full w-full bg-gray-950 text-gray-100 overflow-hidden font-sans select-none">
       {/* Animated GradientASCII Background across the entire screen */}
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-90">
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-90 overflow-hidden">
         <GradientASCII
           colors={["#be0638", "#ff5e79", "#fc6f81", "#fff1f2"]}
           shape="rise"
@@ -110,7 +110,7 @@ function AppLayout() {
       </div>
 
       {/* Main Routed Area */}
-      <div className="relative z-10 flex flex-1 flex-col h-full w-full min-w-0 bg-transparent">
+      <div className="relative z-10 flex flex-1 flex-col h-full w-full min-w-0 min-h-0 overflow-hidden bg-transparent">
         {/* Settings modal */}
         {showSettings && (
           <Settings
