@@ -1,6 +1,18 @@
-﻿# BrainCell
+# BrainCell
 
 BrainCell is a full-stack LLM chat application built for the Lyftr AI Full Stack Assignment. React and TypeScript provide the chat interface, FastAPI handles requests, LiteLLM calls the model and caches responses, and SQLite stores conversations.
+
+## Screenshots
+
+**Landing page**
+
+![BrainCell landing page with the project logo, sign-in entry point, and guest chat option](docs/screenshots/landing.png)
+
+**Guest chat with a live model reply**
+
+![BrainCell guest chat showing a reply about Moon phases and its model, latency, token counts, and key slot](docs/screenshots/chat.png)
+
+Screenshots captured from the local app. The chat shows a live provider response.
 
 ## Live URLs
 
