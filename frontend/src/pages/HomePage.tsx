@@ -79,7 +79,7 @@ export function HomePage({ user, authReady }: HomePageProps) {
             </div>
 
             {/* Action Buttons: Get Started & BrainCell ?? */}
-            <div className="flex flex-col xs:flex-row items-center justify-center gap-3 sm:gap-4 w-full xs:w-auto">
+            <div className="flex flex-row items-center justify-center gap-3 sm:gap-4 w-auto">
               <button
                 disabled={!authReady}
                 onClick={() => {
@@ -89,7 +89,7 @@ export function HomePage({ user, authReady }: HomePageProps) {
                     setShowAuthBox(true);
                   }
                 }}
-                className="w-full xs:w-auto flex items-center justify-center gap-2 rounded-none border-2 border-black bg-white px-6 py-2.5 font-matrix text-xs font-bold tracking-wider text-black transition-all hover:bg-gray-100 hover:translate-x-[1px] hover:translate-y-[1px]"
+                className="flex items-center justify-center gap-2 rounded-none border-2 border-black bg-white px-5 sm:px-6 py-2 sm:py-2.5 font-matrix text-xs font-bold tracking-wider text-black transition-all hover:bg-gray-100 hover:translate-x-[1px] hover:translate-y-[1px] shadow-sm"
               >
                 <span>Get Started</span>
                 <span>→</span>
@@ -97,7 +97,7 @@ export function HomePage({ user, authReady }: HomePageProps) {
 
               <button
                 onClick={() => navigate('/about')}
-                className="w-full xs:w-auto rounded-none border-2 border-black bg-[#be0638] px-6 py-2.5 font-matrix text-xs font-bold tracking-wider text-white transition-all hover:bg-[#d41147] hover:translate-x-[1px] hover:translate-y-[1px]"
+                className="rounded-none border-2 border-black bg-[#be0638] px-5 sm:px-6 py-2 sm:py-2.5 font-matrix text-xs font-bold tracking-wider text-white transition-all hover:bg-[#d41147] hover:translate-x-[1px] hover:translate-y-[1px] shadow-sm"
               >
                 BrainCell ??
               </button>
