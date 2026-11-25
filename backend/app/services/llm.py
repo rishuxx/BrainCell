@@ -139,7 +139,7 @@ class LLMService:
                     messages=messages,
                     api_key=api_key,
                     timeout=self._timeout,
-                    max_tokens=2000,
+                    max_tokens=1000,
                     num_retries=0,  # We handle retries ourselves at key level
                     **cache_params,
                 )
