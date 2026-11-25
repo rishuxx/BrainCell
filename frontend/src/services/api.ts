@@ -5,8 +5,24 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 async function accountHeaders(userId?: string): Promise<Record<string, string>> {
   if (!userId) return {};
-  const { data: { session }, error } = await supabase.auth.getSession();
-  if (error || !session || session.user.id !== userId) throw new Error('Sign in again to access your chats.');
+  let { data: { session }, error } = await supabase.auth.getSession();
+
+  // If token is expired or expiring soon, try refreshing it
+  if (session) {
+    const isExpired = session.expires_at ? (session.expires_at * 1000) < (Date.now() + 60000) : false;
+    if (isExpired) {
+      const refreshResult = await supabase.auth.refreshSession();
+      if (!refreshResult.error && refreshResult.data.session) {
+        session = refreshResult.data.session;
+      }
+    }
+  }
+
+  if (error || !session || session.user.id !== userId) {
+    // Session is invalid - sign out cleanly so UI resets
+    await supabase.auth.signOut().catch(() => {});
+    throw new Error('Your session expired. Please sign in again.');
+  }
   return { Authorization: `Bearer ${session.access_token}` };
 }
 
@@ -53,6 +69,10 @@ export async function sendMessage(
   });
 
   if (!res.ok) {
+    if (res.status === 401) {
+      await supabase.auth.signOut().catch(() => {});
+      throw new Error('Your session expired. Please sign in again.');
+    }
     const errorBody = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
     throw new Error(errorBody.detail || `HTTP ${res.status}`);
   }
