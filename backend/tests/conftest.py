@@ -18,7 +18,7 @@ os.environ["DEFAULT_SYSTEM_PROMPT"] = "You are a helpful AI assistant."
 
 
 def make_mock_response(content="Test response", model="gemini-2.0-flash",
-                       input_tokens=10, output_tokens=5, cache_hit=False):
+                       input_tokens=10, output_tokens=5):
     """Create a mock LiteLLM completion response."""
     response = MagicMock()
     response.choices = [MagicMock()]
@@ -30,8 +30,6 @@ def make_mock_response(content="Test response", model="gemini-2.0-flash",
     response.usage.completion_tokens = output_tokens
 
     response.model = model
-
-    response._hidden_params = {"cache_hit": cache_hit}
 
     return response
 
@@ -69,3 +67,11 @@ async def client():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
+
+
+@pytest.fixture(autouse=True)
+def isolated_cache(isolated_db, monkeypatch):
+    from litellm import Cache
+    from app.services.llm import llm_service
+
+    monkeypatch.setattr(llm_service, "_cache", Cache(type="local"))

@@ -9,19 +9,8 @@ from tests.conftest import make_mock_response
 @pytest.mark.asyncio
 async def test_cache_hit_detection(client: AsyncClient):
     """Identical messages in different sessions should cache-hit."""
-    live_resp = make_mock_response("Paris", cache_hit=False)
-    cached_resp = make_mock_response("Paris", cache_hit=True)
-
-    call_count = 0
-
-    async def mock_completion(**kwargs):
-        nonlocal call_count
-        call_count += 1
-        if call_count == 1:
-            return live_resp
-        return cached_resp
-
-    with patch("litellm.acompletion", side_effect=mock_completion):
+    live_resp = make_mock_response("Paris")
+    with patch("litellm.acompletion", new_callable=AsyncMock, return_value=live_resp) as complete:
         # First call - live inference
         r1 = await client.post("/chat", json={
             "session_id": "cache-s1",
@@ -42,6 +31,10 @@ async def test_cache_hit_detection(client: AsyncClient):
         assert d2["metadata"]["resolution_source"] == "LLM_CACHE"
         assert d2["metadata"]["key_id"] is None
         assert d2["metadata"]["fallback_attempts"] == 0
+        assert d2["reply"] == d1["reply"]
+        for field in ("model", "input_tokens", "output_tokens"):
+            assert d2["metadata"][field] == d1["metadata"][field]
+        complete.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -76,13 +69,16 @@ async def test_cache_different_messages(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_cache_hit_saved_to_history(client: AsyncClient):
     """Cache hits should be saved to session history."""
-    cached_resp = make_mock_response("Paris", cache_hit=True)
-
-    with patch("litellm.acompletion", new_callable=AsyncMock, return_value=cached_resp):
-        await client.post("/chat", json={
+    with patch("litellm.acompletion", new_callable=AsyncMock, return_value=make_mock_response("Paris")):
+        first = await client.post("/chat", json={
+            "session_id": "cache-prime",
+            "message": "What is the capital of France?"
+        })
+        second = await client.post("/chat", json={
             "session_id": "cache-hist",
             "message": "What is the capital of France?"
         })
+        assert first.status_code == second.status_code == 200
 
     # Verify history was saved
     response = await client.get("/sessions/cache-hist/messages")

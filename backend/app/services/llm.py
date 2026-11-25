@@ -1,9 +1,8 @@
 """Lyftr AI Chat - LLM service with LiteLLM integration, caching, and failover."""
 
-import asyncio
 import logging
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import litellm
 from litellm import Cache
@@ -11,6 +10,7 @@ from litellm import Cache
 from ..config import settings
 
 logger = logging.getLogger(__name__)
+MAX_TOKENS = 1000
 
 # Suppress verbose LiteLLM logs
 litellm.suppress_debug_info = True
@@ -24,19 +24,18 @@ class LLMService:
         self._model = settings.llm_model
         self._timeout = settings.llm_timeout
         self._keys: List[str] = settings.api_keys
-        self._cache_enabled = False
+        self._cache: Cache | None = None
 
         # Initialize LiteLLM in-memory cache
         try:
-            litellm.cache = Cache(type="local")
-            self._cache_enabled = True
+            self._cache = Cache(type="local")
             logger.info("LiteLLM in-memory cache initialized")
         except Exception as e:
             logger.warning(f"Failed to initialize LiteLLM cache: {e}")
 
     @property
     def cache_enabled(self) -> bool:
-        return self._cache_enabled
+        return self._cache is not None
 
     @property
     def key_count(self) -> int:
@@ -112,6 +111,18 @@ class LLMService:
         start_time = time.monotonic()
         fallback_attempts = 0
         last_error = None
+        cache = self._cache if not (is_simulation or preferred_key_id) else None
+        cache_input = {"model": self._model, "messages": messages, "max_tokens": MAX_TOKENS}
+        if cache is not None:
+            cached = cache.get_cache(**cache_input)
+            if cached is not None:
+                return {
+                    **cached,
+                    "resolution_source": "LLM_CACHE",
+                    "latency_ms": int((time.monotonic() - start_time) * 1000),
+                    "key_id": None,
+                    "fallback_attempts": 0,
+                }
 
         # Try each key in order
         for i, api_key in enumerate(self._keys):
@@ -128,35 +139,13 @@ class LLMService:
                 continue
 
             try:
-                # Call LiteLLM completion
-                # For simulation requests, bypass cache to test failover properly
-                cache_params = {}
-                if is_simulation or preferred_key_id:
-                    cache_params = {"cache": {"no-cache": True, "no-store": True}}
-
                 response = await litellm.acompletion(
-                    model=self._model,
-                    messages=messages,
+                    **cache_input,
                     api_key=api_key,
                     timeout=self._timeout,
-                    max_tokens=1000,
                     num_retries=0,  # We handle retries ourselves at key level
-                    **cache_params,
+                    cache={"no-cache": True, "no-store": True},
                 )
-
-                elapsed_ms = int((time.monotonic() - start_time) * 1000)
-
-                # Determine if cache hit
-                is_cache_hit = False
-                if hasattr(response, "_hidden_params"):
-                    hidden = response._hidden_params or {}
-                    if hidden.get("cache_hit") is True:
-                        is_cache_hit = True
-
-                # Also check the standard cache key
-                if not is_cache_hit and hasattr(response, "system_fingerprint"):
-                    # Some versions use different attrs
-                    pass
 
                 # Extract content
                 reply = ""
@@ -165,7 +154,7 @@ class LLMService:
                     if choice.message and choice.message.content:
                         reply = choice.message.content
 
-                if not reply:
+                if not isinstance(reply, str) or not reply.strip():
                     raise Exception("Empty reply from provider")
 
                 # Extract token usage
@@ -178,15 +167,20 @@ class LLMService:
                 # Extract model
                 actual_model = response.model or self._model
 
-                return {
+                completion = {
                     "reply": reply,
-                    "resolution_source": "LLM_CACHE" if is_cache_hit else "LIVE_INFERENCE",
                     "model": actual_model,
-                    "latency_ms": elapsed_ms,
                     "input_tokens": input_tokens,
                     "output_tokens": output_tokens,
-                    "key_id": None if is_cache_hit else key_id,
-                    "fallback_attempts": 0 if is_cache_hit else fallback_attempts,
+                }
+                if cache is not None:
+                    cache.add_cache(completion, **cache_input)
+                return {
+                    **completion,
+                    "resolution_source": "LIVE_INFERENCE",
+                    "latency_ms": int((time.monotonic() - start_time) * 1000),
+                    "key_id": key_id,
+                    "fallback_attempts": fallback_attempts,
                 }
 
             except Exception as e:
