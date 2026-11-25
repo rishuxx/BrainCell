@@ -98,7 +98,7 @@ function AppLayout() {
             <span className="h-2 w-2 rounded-none bg-[#be0638] animate-pulse flex-shrink-0" />
             <span className="truncate max-w-[110px] sm:max-w-[140px] font-bold">{user.email}</span>
           </div>
-        ) : (
+        ) : location.pathname !== '/' && (
           <button
             onClick={() => navigate('/')}
             className="flex items-center gap-1.5 rounded-none border border-black bg-white px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs text-black font-matrix shadow-lg transition-all hover:bg-[#be0638] hover:text-white"

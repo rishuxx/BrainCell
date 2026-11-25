@@ -113,6 +113,7 @@ export function HomePage({ user, authReady }: HomePageProps) {
                 <ArrowRight className="h-3 w-3" />
               </button>
             )}
+
           </div>
         ) : (
           <div className="animate-in fade-in duration-200 w-full flex justify-center">
@@ -126,6 +127,16 @@ export function HomePage({ user, authReady }: HomePageProps) {
           </div>
         )}
       </div>
+      {!showAuthBox && (
+        <section
+          aria-label="Project credits"
+          className="mt-8 max-w-md shrink-0 space-y-1 px-2 text-center font-matrix text-[9px] leading-relaxed text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]"
+        >
+          <p className="mb-2 text-xs sm:text-sm">Developed by Rishu K.</p>
+          <p>Built for the Lyftr.ai Full Stack Assignment.</p>
+          {authReady && !user && <p>Choose “Or chat as guest” to try BrainCell.</p>}
+        </section>
+      )}
     </div>
   );
 }
