@@ -163,9 +163,9 @@ export function ChatInput({ onSend, isLoading, keyOptions, selectedKey, onSelect
               data-testid="send-button"
               onClick={handleSend}
               disabled={isLoading || !hasText}
-              className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200 ${
+              className={`send-button flex h-8 w-8 items-center justify-center transition-all duration-200 ${
                 hasText
-                  ? 'bg-[#c95d3e] text-white shadow-lg hover:bg-[#d96c4d] hover:scale-105 active:scale-95'
+                  ? 'bg-[#be0638] text-white shadow-lg hover:bg-[#d80b45] hover:scale-105 active:scale-95'
                   : 'bg-white/5 text-gray-500 opacity-40 cursor-not-allowed'
               }`}
               aria-label="Send message"
