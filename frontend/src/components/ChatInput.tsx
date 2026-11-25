@@ -15,7 +15,6 @@ export function ChatInput({ onSend, isLoading, keyOptions, selectedKey, onSelect
   const [message, setMessage] = useState('');
   const options = [{ key_id: '', provider: 'Automatic', model: 'Key pool with failover' }, ...keyOptions];
   const selected = options.find((option) => option.key_id === selectedKey) ?? options[0];
-  const singleOption = keyOptions.length === 1 ? keyOptions[0] : undefined;
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [openUpward, setOpenUpward] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -98,36 +97,27 @@ export function ChatInput({ onSend, isLoading, keyOptions, selectedKey, onSelect
         <div className="flex items-center justify-between px-2.5 sm:px-3.5 pb-2.5 sm:pb-3 pt-1">
           {/* Left Controls: Model Switcher dropdown without star icon */}
           <div className="relative" ref={dropdownRef}>
-            {singleOption ? (
-              <span className="inline-flex items-center gap-1 sm:gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 sm:px-2.5 py-1 sm:py-1.5 text-[11px] sm:text-xs text-gray-200">
-                <span className="font-semibold text-white truncate max-w-[100px] sm:max-w-none">{singleOption.provider}</span>
-                <span className="text-[10px] sm:text-[11px] text-gray-400 hidden xs:inline truncate max-w-[120px] sm:max-w-none">
-                  {singleOption.model === 'google/gemini-2.5-flash' ? 'Gemini 2.5 Flash' : singleOption.model}
-                </span>
-              </span>
-            ) : (
             <button
               ref={buttonRef}
               type="button"
               onClick={handleToggleDropdown}
-              className="flex items-center gap-1 sm:gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2 sm:px-2.5 py-1 sm:py-1.5 text-[11px] sm:text-xs text-gray-200 transition-all hover:bg-white/10 hover:border-white/20"
+              className="flex items-center gap-1 sm:gap-1.5 pixel-corners bg-[#be0638] px-2 sm:px-2.5 py-1 sm:py-1.5 text-[11px] sm:text-xs text-white transition-colors hover:bg-[#a80632]"
               aria-label="Select provider and key"
               aria-expanded={isModelDropdownOpen}
             >
               <span className="font-semibold text-white truncate max-w-[80px] sm:max-w-none">{selected.provider}</span>
-              {selected.key_id && <span className="text-[10px] sm:text-[11px] text-gray-400">{selected.key_id}</span>}
-              <ChevronDown className={`h-3 w-3 text-gray-400 transition-transform ${isModelDropdownOpen ? 'rotate-180' : ''}`} />
+              {selected.key_id && <span className="text-[10px] sm:text-[11px] text-white/85">{selected.key_id}</span>}
+              <ChevronDown className={`h-3 w-3 text-white transition-transform ${isModelDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
-            )}
 
             {/* Model Dropdown Menu - smart positioning: opens downward by default, flips upward when near viewport bottom */}
-            {!singleOption && isModelDropdownOpen && (
+            {isModelDropdownOpen && (
               <div
-                className={`absolute left-0 z-50 w-56 max-w-[80vw] rounded-2xl border border-white/15 bg-[#18191c]/95 p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-100 ${
+                className={`absolute left-0 z-50 w-56 max-w-[80vw] pixel-corners bg-[#1e0c14] p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-100 ${
                   openUpward ? 'bottom-full mb-2' : 'top-full mt-2'
                 }`}
               >
-                <div className="px-2 py-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400">
+                <div className="px-2 py-1.5 text-[10px] font-mono uppercase tracking-wider text-white/80">
                   Select provider and key
                 </div>
                 {options.map((option) => (
@@ -138,18 +128,18 @@ export function ChatInput({ onSend, isLoading, keyOptions, selectedKey, onSelect
                       onSelectKey(option.key_id);
                       setIsModelDropdownOpen(false);
                     }}
-                    className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-xs transition-colors ${
+                    className={`flex w-full items-center justify-between pixel-corners px-2.5 py-2 text-xs transition-colors ${
                       selectedKey === option.key_id
-                        ? 'bg-pink-500/20 text-white font-medium'
-                        : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                        ? 'bg-[#be0638] text-white font-medium'
+                        : 'text-white hover:bg-[#731b34]'
                     }`}
                   >
                     <div className="flex flex-col text-left">
                       <span className="font-semibold">{option.provider}{option.key_id ? ` · ${option.key_id}` : ''}</span>
-                      <span className="break-all text-[10px] text-gray-400">{option.model}</span>
+                      <span className="break-all text-[10px] text-white/85">{option.model}</span>
                     </div>
                     {selectedKey === option.key_id && (
-                      <Check className="h-3.5 w-3.5 text-pink-400 flex-shrink-0" />
+                      <Check className="h-3.5 w-3.5 text-white flex-shrink-0" />
                     )}
                   </button>
                 ))}
@@ -163,7 +153,7 @@ export function ChatInput({ onSend, isLoading, keyOptions, selectedKey, onSelect
               data-testid="send-button"
               onClick={handleSend}
               disabled={isLoading || !hasText}
-              className={`send-button flex h-8 w-8 items-center justify-center transition-all duration-200 ${
+              className={`pixel-corners flex h-8 w-8 items-center justify-center transition-all duration-200 ${
                 hasText
                   ? 'bg-[#be0638] text-white shadow-lg hover:bg-[#d80b45] hover:scale-105 active:scale-95'
                   : 'bg-white/5 text-gray-500 opacity-40 cursor-not-allowed'

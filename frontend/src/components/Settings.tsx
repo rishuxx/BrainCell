@@ -8,6 +8,8 @@ interface SettingsProps {
   onClose: () => void;
 }
 
+const fieldClassName = 'pixel-corners block w-full border border-[#be0638] bg-[#100006] px-3 py-2 text-xs leading-relaxed text-white placeholder:text-rose-200/70';
+
 export function Settings({
   systemPrompt,
   onSystemPromptChange,
@@ -16,13 +18,14 @@ export function Settings({
   onClose,
 }: SettingsProps) {
   return (
-    <div className="border-b border-gray-200 bg-white p-3 sm:p-4 dark:border-gray-700 dark:bg-gray-900 shadow-lg">
+    <div className="font-matrix border-b border-[#be0638] bg-black p-3 text-white sm:p-4">
       <div className="mx-auto max-w-3xl">
         <div className="flex items-center justify-between mb-2 sm:mb-3">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Settings & Failover Test</h3>
+          <h3 className="text-sm text-rose-400">Settings & Failover Test</h3>
           <button
+            type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="pixel-corners bg-[#be0638] p-2 text-white transition-colors hover:bg-[#d80b45]"
             aria-label="Close settings"
           >
             <X className="h-4 w-4" />
@@ -32,7 +35,7 @@ export function Settings({
         <div className="space-y-3">
           {/* System Prompt */}
           <div>
-            <label htmlFor="system-prompt" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label htmlFor="system-prompt" className="mb-1.5 block text-xs">
               System Prompt (optional)
             </label>
             <textarea
@@ -42,15 +45,13 @@ export function Settings({
               onChange={(e) => onSystemPromptChange(e.target.value)}
               placeholder="You are a helpful AI assistant."
               rows={2}
-              className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-xs
-                         focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20
-                         dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+              className={fieldClassName}
             />
           </div>
 
           {/* Failover Simulation */}
           <div>
-            <label htmlFor="simulate-failure" className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label htmlFor="simulate-failure" className="mb-1.5 block text-xs">
               Simulate Failure (X-Simulate-Failure header)
             </label>
             <input
@@ -59,11 +60,10 @@ export function Settings({
               value={simulateFailure}
               onChange={(e) => onSimulateFailureChange(e.target.value)}
               placeholder="e.g. key_1=429 or *=503"
-              className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-xs
-                         focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/20
-                         dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+              aria-describedby="simulate-failure-format"
+              className={fieldClassName}
             />
-            <p className="mt-1 text-[11px] sm:text-xs text-gray-400">
+            <p id="simulate-failure-format" className="mt-1.5 text-[11px] text-rose-300 sm:text-xs">
               Format: key_1=429, key_2=500, or *=503 for all keys
             </p>
           </div>
