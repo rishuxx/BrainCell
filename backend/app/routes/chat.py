@@ -2,7 +2,8 @@
 
 import asyncio
 import logging
-from typing import Dict, Optional
+from typing import Optional
+from weakref import WeakValueDictionary
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import JSONResponse
@@ -24,14 +25,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Per-session locks for serializing concurrent requests
-_session_locks: Dict[str, asyncio.Lock] = {}
+_session_locks: WeakValueDictionary[str, asyncio.Lock] = WeakValueDictionary()
 
 
 def _get_session_lock(session_id: str) -> asyncio.Lock:
     """Get or create a lock for a session."""
-    if session_id not in _session_locks:
-        _session_locks[session_id] = asyncio.Lock()
-    return _session_locks[session_id]
+    lock = _session_locks.get(session_id)
+    if lock is None:
+        lock = asyncio.Lock()
+        _session_locks[session_id] = lock
+    return lock
 
 
 @router.post("/chat")

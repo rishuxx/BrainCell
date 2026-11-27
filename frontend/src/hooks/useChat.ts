@@ -26,8 +26,9 @@ export function useChat(sessionId: string, userId?: string, onChatSaved?: () => 
     return () => controller.abort();
   }, [sessionId, userId]);
 
-  async function send(message: string, simulateFailure?: string, preferredKeyId?: string) {
+  async function send(message: string, systemPrompt: string, simulateFailure?: string, preferredKeyId?: string) {
     const content = message.trim();
+    const prompt = systemPrompt.trim();
     if (!content || isRestoring || sending.current) return;
 
     sending.current = true;
@@ -39,6 +40,7 @@ export function useChat(sessionId: string, userId?: string, onChatSaved?: () => 
         {
           session_id: sessionId,
           message: content,
+          ...(prompt ? { system_prompt: prompt } : {}),
           ...(preferredKeyId ? { preferred_key_id: preferredKeyId } : {}),
         },
         simulateFailure || undefined,

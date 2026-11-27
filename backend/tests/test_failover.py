@@ -1,9 +1,55 @@
 """Tests for key failover and simulation."""
 
+from unittest.mock import patch, AsyncMock
+
+import litellm
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
 from httpx import AsyncClient
 from tests.conftest import make_mock_response
+
+
+@pytest.mark.asyncio
+async def test_provider_rate_limit_falls_back_without_simulation(client):
+    limit = litellm.RateLimitError("quota exhausted", "gemini", "fixture-model")
+    with patch("litellm.acompletion", side_effect=[limit, make_mock_response()]) as complete:
+        response = await client.post("/chat", json={
+            "session_id": "provider-quota", "message": "Try the backup",
+        })
+    assert response.status_code == 200
+    assert response.json()["metadata"]["key_id"] == "key_2"
+    assert response.json()["metadata"]["fallback_attempts"] == 1
+    assert [call.kwargs["api_key"] for call in complete.await_args_list] == ["test_key_1", "test_key_2"]
+
+
+@pytest.mark.asyncio
+async def test_bad_request_does_not_fall_back_when_text_mentions_429(client):
+    error = litellm.BadRequestError("Invalid field in message 429", "fixture-model", "gemini")
+    with patch("litellm.acompletion", side_effect=error) as complete:
+        response = await client.post("/chat", json={
+            "session_id": "provider-bad-request", "message": "Malformed at the provider",
+        })
+    assert response.status_code == 503
+    complete.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_missing_provider_usage_is_not_persisted_or_cached(client):
+    response = make_mock_response(input_tokens=None)
+    with patch("litellm.acompletion", return_value=response) as complete:
+        failed = await client.post("/chat", json={
+            "session_id": "missing-usage", "message": "This needs genuine usage",
+        })
+        assert failed.status_code == 503
+        assert complete.await_count == 2
+    assert (await client.get("/sessions/missing-usage/messages")).status_code == 404
+
+    with patch("litellm.acompletion", return_value=make_mock_response()) as complete:
+        retried = await client.post("/chat", json={
+            "session_id": "missing-usage", "message": "This needs genuine usage",
+        })
+        assert retried.status_code == 200
+        assert retried.json()["metadata"]["resolution_source"] == "LIVE_INFERENCE"
+        complete.assert_awaited_once()
 
 
 @pytest.mark.asyncio

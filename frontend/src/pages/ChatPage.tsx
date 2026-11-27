@@ -7,12 +7,13 @@ import { getHealth, listSavedChats } from '../services/api';
 import type { KeyOption } from '../types/chat';
 
 interface ChatPageProps {
+  systemPrompt: string;
   simulateFailure: string;
   userId?: string;
   onChatSaved: () => void;
 }
 
-export function ChatPage({ simulateFailure, userId, onChatSaved }: ChatPageProps) {
+export function ChatPage({ systemPrompt, simulateFailure, userId, onChatSaved }: ChatPageProps) {
   const { sessionId: routeSessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const [resumeError, setResumeError] = useState(false);
@@ -38,13 +39,13 @@ export function ChatPage({ simulateFailure, userId, onChatSaved }: ChatPageProps
   }, [routeSessionId, navigate, userId]);
 
   return routeSessionId
-    ? <ChatSession key={`${userId ?? 'guest'}:${routeSessionId}`} sessionId={routeSessionId} simulateFailure={simulateFailure} userId={userId} onChatSaved={onChatSaved} />
+    ? <ChatSession key={`${userId ?? 'guest'}:${routeSessionId}`} sessionId={routeSessionId} systemPrompt={systemPrompt} simulateFailure={simulateFailure} userId={userId} onChatSaved={onChatSaved} />
     : resumeError
       ? <p role="alert" className="p-4 text-center">Could not load your chats. Reload to retry, or start a New Chat from the sidebar.</p>
       : <p role="status" className="p-4 text-center">Loading your chats…</p>;
 }
 
-function ChatSession({ sessionId, simulateFailure, userId, onChatSaved }: ChatPageProps & { sessionId: string }) {
+function ChatSession({ sessionId, systemPrompt, simulateFailure, userId, onChatSaved }: ChatPageProps & { sessionId: string }) {
   const { messages, isLoading, isRestoring, historyError, send } = useChat(sessionId, userId, onChatSaved);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [keyOptions, setKeyOptions] = useState<KeyOption[]>([]);
@@ -65,7 +66,7 @@ function ChatSession({ sessionId, simulateFailure, userId, onChatSaved }: ChatPa
   }, [messages]);
 
   const handleSend = (message: string) => {
-    void send(message, simulateFailure, selectedKey);
+    void send(message, systemPrompt, simulateFailure, selectedKey);
   };
 
   return (

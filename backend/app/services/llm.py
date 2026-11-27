@@ -11,6 +11,7 @@ from ..config import settings
 
 logger = logging.getLogger(__name__)
 MAX_TOKENS = 1000
+RETRYABLE_STATUSES = {402, 408, 429}
 
 # Suppress verbose LiteLLM logs
 litellm.suppress_debug_info = True
@@ -30,8 +31,8 @@ class LLMService:
         try:
             self._cache = Cache(type="local")
             logger.info("LiteLLM in-memory cache initialized")
-        except Exception as e:
-            logger.warning(f"Failed to initialize LiteLLM cache: {e}")
+        except Exception as exc:
+            logger.warning("LiteLLM cache initialization failed: %s", type(exc).__name__)
 
     @property
     def cache_enabled(self) -> bool:
@@ -69,6 +70,7 @@ class LLMService:
 
         simulations = {}
         allowed_statuses = {429, 500, 502, 503}
+        allowed_keys = {"*", *(self._key_id(i) for i in range(self.key_count))}
         parts = [p.strip() for p in header_value.split(",")]
 
         for part in parts:
@@ -80,9 +82,8 @@ class LLMService:
                 status = int(status_part.strip())
             except ValueError:
                 continue
-            if status not in allowed_statuses:
-                continue
-            simulations[key_part] = status
+            if status in allowed_statuses and key_part in allowed_keys:
+                simulations[key_part] = status
 
         # Expand wildcard
         if "*" in simulations:
@@ -130,15 +131,10 @@ class LLMService:
             if preferred_key_id and key_id != preferred_key_id:
                 continue
 
-            # Check simulation
-            if key_id in simulations:
-                sim_status = simulations[key_id]
-                fallback_attempts += 1
-                logger.info(f"Simulated failure for {key_id}: {sim_status}")
-                last_error = Exception(f"Simulated {sim_status} for {key_id}")
-                continue
-
             try:
+                if key_id in simulations:
+                    raise SimulatedProviderError(simulations[key_id])
+
                 response = await litellm.acompletion(
                     **cache_input,
                     api_key=api_key,
@@ -147,25 +143,20 @@ class LLMService:
                     cache={"no-cache": True, "no-store": True},
                 )
 
-                # Extract content
-                reply = ""
-                if response.choices and len(response.choices) > 0:
-                    choice = response.choices[0]
-                    if choice.message and choice.message.content:
-                        reply = choice.message.content
-
+                choices = getattr(response, "choices", None)
+                message = getattr(choices[0], "message", None) if choices else None
+                reply = getattr(message, "content", None)
                 if not isinstance(reply, str) or not reply.strip():
-                    raise Exception("Empty reply from provider")
+                    raise InvalidCompletionError()
 
-                # Extract token usage
-                input_tokens = 0
-                output_tokens = 0
-                if response.usage:
-                    input_tokens = response.usage.prompt_tokens or 0
-                    output_tokens = response.usage.completion_tokens or 0
-
-                # Extract model
-                actual_model = response.model or self._model
+                usage = getattr(response, "usage", None)
+                input_tokens = getattr(usage, "prompt_tokens", None)
+                output_tokens = getattr(usage, "completion_tokens", None)
+                actual_model = getattr(response, "model", None)
+                if not isinstance(actual_model, str) or not actual_model.strip() or any(
+                    type(count) is not int or count < 0 for count in (input_tokens, output_tokens)
+                ):
+                    raise InvalidCompletionError()
 
                 completion = {
                     "reply": reply,
@@ -183,38 +174,32 @@ class LLMService:
                     "fallback_attempts": fallback_attempts,
                 }
 
-            except Exception as e:
-                error_str = str(e)
-                # Check if it's a retryable provider error (429, 5xx)
-                is_retryable = any(
-                    code in error_str
-                    for code in ["429", "500", "502", "503", "RateLimitError", "ServiceUnavailableError", "InternalServerError"]
-                )
-
-                if is_retryable or "Simulated" in error_str:
-                    if "Simulated" not in error_str:
-                        fallback_attempts += 1
-                    last_error = e
-                    logger.warning("Key %s failed with %s", key_id, type(e).__name__)
-                    continue
-                else:
-                    # Non-retryable error (e.g., bad request) - don't try other keys
-                    logger.warning("Key %s failed with %s", key_id, type(e).__name__)
+            except Exception as exc:
+                status = getattr(exc, "status_code", None)
+                logger.warning("Key %s failed with %s (status %s)", key_id, type(exc).__name__, status)
+                retryable_error = isinstance(exc, (
+                    litellm.RateLimitError, litellm.Timeout, litellm.APIConnectionError, InvalidCompletionError,
+                ))
+                retryable_status = isinstance(status, int) and (status in RETRYABLE_STATUSES or 500 <= status < 600)
+                if not (retryable_error or retryable_status):
                     raise
+                fallback_attempts += 1
+                last_error = exc
 
-        # All keys exhausted
-        raise AllKeysExhaustedError(
-            f"all providers unavailable",
-            last_error=last_error,
-        )
+        raise AllKeysExhaustedError("all providers unavailable") from last_error
 
 
 class AllKeysExhaustedError(Exception):
     """Raised when all configured LLM keys have failed."""
 
-    def __init__(self, message: str, last_error: Optional[Exception] = None):
-        super().__init__(message)
-        self.last_error = last_error
+
+class InvalidCompletionError(Exception):
+    """The provider did not return a usable reply and usage."""
+
+
+class SimulatedProviderError(Exception):
+    def __init__(self, status_code: int):
+        self.status_code = status_code
 
 
 # Singleton instance

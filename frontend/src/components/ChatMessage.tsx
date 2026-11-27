@@ -59,7 +59,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         {/* Assistant Response: Clean typography with natural spacing */}
         <div className="text-gray-100">
           {isError ? (
-            <div className="flex items-center gap-2 rounded-none border border-red-500/30 bg-red-950/20 px-3 sm:px-3.5 py-2 sm:py-2.5 text-red-300 text-xs sm:text-sm">
+            <div role="alert" className="flex items-center gap-2 rounded-none border border-red-500/30 bg-red-950/20 px-3 sm:px-3.5 py-2 sm:py-2.5 text-red-300 text-xs sm:text-sm">
               <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-400" />
               <p className="break-words">{message.content}</p>
             </div>

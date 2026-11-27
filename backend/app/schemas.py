@@ -71,6 +71,7 @@ class HealthResponse(BaseModel):
     keys_configured: int
     cache_enabled: bool
     key_options: list[KeyOption]
+    detail: str | None = None
 
 
 class MessageItem(BaseModel):

@@ -75,7 +75,11 @@ export function ChatInput({ onSend, isLoading, keyOptions, selectedKey, onSelect
 
   return (
     <div className={`w-full transition-all ${isHero ? 'max-w-2xl px-2 sm:px-0' : 'max-w-3xl mx-auto'}`}>
-      <div className="relative flex flex-col rounded-2xl sm:rounded-3xl border border-white/10 bg-[#1e1f22]/90 shadow-2xl transition-all duration-200 focus-within:border-white/20 focus-within:bg-[#232428]/95">
+      <div className="group relative isolate flex flex-col">
+        <div
+          aria-hidden="true"
+          className="pixel-corners pointer-events-none absolute inset-0 -z-10 border border-white/10 bg-[#1e1f22]/90 transition-colors duration-200 group-focus-within:border-white/20 group-focus-within:bg-[#232428]/95"
+        />
         {/* Text Input Area */}
         <div className="p-2.5 sm:p-3.5 pb-1 sm:pb-2">
           <textarea

@@ -25,10 +25,13 @@ class Settings:
     def __init__(self):
         # LLM API Keys - comma-separated, minimum 2
         raw_keys = os.environ.get("LLM_API_KEYS", "")
-        self.api_keys: List[str] = [k.strip() for k in raw_keys.split(",") if k.strip()]
+        keys = (value.strip() for value in raw_keys.split(","))
+        self.api_keys: List[str] = list(dict.fromkeys(
+            key for key in keys if key and key not in {"replace_key_1", "replace_key_2"}
+        ))
 
         # LLM Model
-        self.llm_model: str = os.environ.get("LLM_MODEL", "gemini/gemini-2.0-flash")
+        self.llm_model: str = os.environ.get("LLM_MODEL", "gemini/gemini-2.5-flash-lite").strip()
 
         # Database URL
         self.database_url: str = os.environ.get("DATABASE_URL", "sqlite:///./app.db")

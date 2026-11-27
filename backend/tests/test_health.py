@@ -20,3 +20,14 @@ async def test_health_json_content_type(client: AsyncClient):
     """Health response is JSON."""
     response = await client.get("/health")
     assert "application/json" in response.headers["content-type"]
+
+
+@pytest.mark.asyncio
+async def test_health_returns_503_with_one_configured_key(client, monkeypatch):
+    from app.services.llm import llm_service
+
+    monkeypatch.setattr(llm_service, "_keys", ["fixture-primary"])
+    response = await client.get("/health")
+    assert response.status_code == 503
+    assert response.json()["status"] == "degraded"
+    assert response.json()["keys_configured"] == 1

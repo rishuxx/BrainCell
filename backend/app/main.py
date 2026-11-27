@@ -40,11 +40,11 @@ async def lifespan(app: FastAPI):
         f"Simulation: {settings.enable_failure_simulation}"
     )
 
-    yield
-
-    # Shutdown
-    close_db()
-    logger.info("Database connection closed")
+    try:
+        yield
+    finally:
+        close_db()
+        logger.info("Database connection closed")
 
 
 app = FastAPI(
@@ -54,6 +54,19 @@ app = FastAPI(
     docs_url=None,  # Disable docs in production (3-endpoint constraint)
     redoc_url=None,
 )
+
+
+@app.middleware("http")
+async def sanitize_unexpected_errors(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except Exception as exc:
+        logger.error("Unhandled request error: %s", type(exc).__name__)
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "internal server error"},
+        )
+
 
 # CORS middleware
 app.add_middleware(
@@ -68,13 +81,3 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(chat_router)
 app.include_router(sessions_router)
-
-
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    """Catch-all handler to sanitize unexpected errors."""
-    logger.error(f"Unhandled exception: {exc}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "internal server error"},
-    )

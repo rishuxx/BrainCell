@@ -1,7 +1,17 @@
-import type { ChatMessage, ChatRequest, ChatResponse, HealthResponse } from '../types/chat';
+import type { ChatMessage, ChatMetadata, ChatRequest, ChatResponse, HealthResponse } from '../types/chat';
 import { supabase } from '../utils/supabase';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
+function isChatMetadata(value: unknown): value is ChatMetadata {
+  if (!value || typeof value !== 'object') return false;
+  const metadata = value as Partial<ChatMetadata>;
+  return (metadata.resolution_source === 'LIVE_INFERENCE' || metadata.resolution_source === 'LLM_CACHE')
+    && typeof metadata.model === 'string' && metadata.model.length > 0
+    && [metadata.latency_ms, metadata.input_tokens, metadata.output_tokens, metadata.fallback_attempts]
+      .every((count) => typeof count === 'number' && Number.isInteger(count) && count >= 0)
+    && (metadata.key_id === null || typeof metadata.key_id === 'string');
+}
 
 async function accountHeaders(userId?: string): Promise<Record<string, string>> {
   if (!userId) return {};
@@ -73,17 +83,32 @@ export async function sendMessage(
       await supabase.auth.signOut().catch(() => {});
       throw new Error('Your session expired. Please sign in again.');
     }
-    const errorBody = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
-    throw new Error(errorBody.detail || `HTTP ${res.status}`);
+    const errorBody = await res.json().catch(() => null);
+    const detail = errorBody?.detail;
+    const validationMessage = Array.isArray(detail) ? detail[0]?.msg : undefined;
+    throw new Error(
+      typeof detail === 'string' ? detail
+        : typeof validationMessage === 'string' ? validationMessage
+          : `Request failed (HTTP ${res.status})`,
+    );
   }
 
-  return res.json();
+  const result = await res.json().catch(() => null);
+  if (result?.session_id !== request.session_id
+    || typeof result.reply !== 'string' || !result.reply.trim()
+    || !isChatMetadata(result.metadata)) {
+    throw new Error('The server returned an invalid chat response. Please try again.');
+  }
+  return result;
 }
 
 export async function getHealth(signal?: AbortSignal): Promise<HealthResponse> {
   const res = await fetch(`${API_BASE}/health`, { signal });
-  if (!res.ok) throw new Error(`Health check failed: ${res.status}`);
-  return res.json();
+  const health = await res.json().catch(() => null);
+  if (!Array.isArray(health?.key_options) || (!res.ok && (res.status !== 503 || health.status !== 'degraded'))) {
+    throw new Error(`Health check failed: ${res.status}`);
+  }
+  return health;
 }
 
 export async function getSessionMessages(sessionId: string, signal: AbortSignal, userId?: string): Promise<ChatMessage[]> {
@@ -94,7 +119,14 @@ export async function getSessionMessages(sessionId: string, signal: AbortSignal,
     const errorBody = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
     throw new Error(errorBody.detail || `HTTP ${res.status}`);
   }
-  const { messages } = await res.json();
-  if (!Array.isArray(messages)) throw new Error('Invalid chat history response');
+  const result = await res.json().catch(() => null);
+  const messages = result?.messages;
+  if (!Array.isArray(messages) || !messages.every((message) => (
+    (message?.role === 'user' || message?.role === 'assistant')
+    && typeof message.content === 'string'
+    && (message.metadata == null || isChatMetadata(message.metadata))
+  ))) {
+    throw new Error('Invalid chat history response');
+  }
   return messages;
 }

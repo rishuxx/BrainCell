@@ -42,24 +42,20 @@ Use `make down` or `docker compose down` to stop the services and retain the nam
 
 ### Without Docker
 
-Use Python 3.13 and Node.js 22.12+ or a newer supported LTS. Install the backend requirements with `python -m pip install -r requirements.txt` from `backend/`, preferably in a virtual environment. Set the backend variables in your shell before starting Uvicorn. The app reads process environment variables directly.
+Use Python 3.12 or 3.13 and Node.js 22.12+ or a newer supported LTS. From the repository root, copy `.env.example` to `.env` if you have no local configuration. Set `DATABASE_URL=sqlite:///./app.db`, then configure `LLM_MODEL` and `LLM_API_KEYS` for your provider.
 
 ```powershell
-cd backend
-$env:LLM_API_KEYS = 'replace_key_1,replace_key_2'
-$env:LLM_MODEL = 'replace_with_a_supported_litellm_model'
-$env:DATABASE_URL = 'sqlite:///./app.db'
-$env:ALLOWED_ORIGINS = 'http://localhost:3000'
-$env:ENABLE_FAILURE_SIMULATION = 'true'
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --env-file .env --host 127.0.0.1 --port 8000
 ```
 
-On Bash, use `export NAME='value'` for the same variables. In a second terminal, run the frontend from the repository root.
+On Bash, use `python3 -m venv .venv` and `.venv/bin/python` in those commands. In a second terminal, run the frontend from the repository root.
 
 ```sh
 cd frontend
 npm ci
-npm run dev
+npm run dev -- --host 127.0.0.1 --strictPort
 ```
 
 The frontend defaults to `http://localhost:8000`. For another backend, set `VITE_API_BASE_URL` in `frontend/.env.local` before starting or building Vite. For account history, use the same Supabase project in the backend `SUPABASE_*` settings and frontend `VITE_SUPABASE_*` settings from [.env.example](.env.example). Put only the project's publishable key in the frontend.
@@ -82,7 +78,7 @@ The assignment asks for a chat application that remembers prior turns, stays usa
 ### Request flow and API
 
 1. FastAPI validates the prompt and session ID. The chat route checks access and loads history under the session lock.
-2. The LLM service calls `litellm.acompletion` with the configured model and ordered key slots. It reads LiteLLM's cache-hit metadata and measures elapsed time with `time.monotonic()`.
+2. The gateway checks LiteLLM's in-memory cache using the configured model, full messages and generation settings. A miss calls `litellm.acompletion` with ordered key slots. It measures elapsed time with `time.monotonic()`.
 3. After a successful live or cached reply, `save_message_pair` commits the two messages and assistant metadata together. Error responses do not save a partial turn.
 
 | Endpoint | Purpose |
@@ -140,9 +136,9 @@ ORDER BY updated_at DESC, session_id;
 
 ### Current implementation limits
 
-- Failover uses the application's ordered loop around LiteLLM SDK calls. Retry classification checks exception text. The assignment calls for LiteLLM Router or fallback facilities and normalized provider exceptions.
-- The degraded health response currently uses HTTP 200. Check the returned `status` field. The assignment requires readiness failures to use a non-200 response.
-- The LLM adapter uses zero for missing usage fields. Verify usage reporting for the configured provider and model before relying on those metrics. `latency_ms` measures the gateway path through cache lookup or completion, including prior fallback attempts. SQLite reads and writes fall outside that interval.
+- Failover uses an ordered application loop around LiteLLM SDK calls. It advances on normalized rate-limit, timeout or connection errors, provider status 402, 408, 429 or 5xx, and incomplete provider replies. The assignment also calls for LiteLLM Router or its fallback facilities.
+- Readiness returns HTTP 503 when fewer than two distinct keys are configured or the database or cache is unavailable. With one valid key, chat can still return live replies.
+- A usable provider reply must include its model and both token counts. `latency_ms` measures the gateway path through cache lookup or completion, including prior fallback attempts. SQLite reads and writes fall outside that interval.
 - The account features add two routes beyond the three core assignment endpoints. Legacy SQLite chats without an ownership record remain stored and are inaccessible through the API.
 
 ## Verification: how to see failover, cache hits and per-message token usage
@@ -179,7 +175,7 @@ catch { $_.ErrorDetails.Message }
 - The outage should return 503 with `all providers unavailable`. Its history should return 404. For a memory check, tell the assistant your name and ask it to recall the name in a second turn of the same session.
 - For container persistence, save a successful chat, run `docker compose restart backend`, then query the same session history again.
 
-Local checks for this revision passed with **37 backend tests** using mocked provider calls and a successful **TypeScript/Vite production build**. Vite emitted a bundle-size warning. Live inference, Docker restart persistence, and a connected public deployment were outside this verification run.
+Local verification passed **41 backend tests** and the **TypeScript/Vite production build**. A local OpenRouter smoke test confirmed live inference, an exact cache hit with matching token counts, follow-up context, and a simulated outage that left no history. The saved conversation reopened after a local backend restart. Chrome verified guest chat, system prompt submission, the outage message and per-reply metadata. Only one live provider key was configured, so backup success was verified in tests with mocked provider calls. The Docker configuration parsed successfully. Docker runtime and public deployment were outside this verification run.
 
 ```sh
 # From backend/

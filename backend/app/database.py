@@ -3,7 +3,6 @@
 import json
 import os
 import sqlite3
-from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -29,18 +28,9 @@ def init_db():
     # Create parent directory if needed
     parent_dir = os.path.dirname(db_path)
     if parent_dir:
-        try:
-            os.makedirs(parent_dir, exist_ok=True)
-        except Exception as e:
-            print(f"Warning: could not create parent dir {parent_dir}: {e}")
+        os.makedirs(parent_dir, exist_ok=True)
 
-    try:
-        _connection = sqlite3.connect(db_path, check_same_thread=False)
-    except sqlite3.OperationalError as e:
-        # Fallback to local working directory if mounted volume path is not writable
-        fallback_path = os.path.abspath("./app.db")
-        print(f"Warning: Failed to open {db_path} ({e}). Falling back to {fallback_path}")
-        _connection = sqlite3.connect(fallback_path, check_same_thread=False)
+    _connection = sqlite3.connect(db_path, check_same_thread=False)
     _connection.row_factory = sqlite3.Row
 
     # Enable WAL mode and busy timeout

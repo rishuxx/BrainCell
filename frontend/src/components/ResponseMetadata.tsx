@@ -46,20 +46,14 @@ export function ResponseMetadata({ metadata }: ResponseMetadataProps) {
       <span className="text-gray-600">·</span>
 
       {/* In Tokens */}
-      <span
-        data-testid="meta-input-tokens"
-        className="inline-flex items-center gap-0.5 text-gray-400"
-      >
+      <span className="inline-flex items-center gap-0.5 text-gray-400">
         <ArrowRightLeft className="h-2.5 w-2.5 text-gray-500" />
-        In: {metadata.input_tokens}
+        In: <span data-testid="meta-input-tokens">{metadata.input_tokens}</span>
       </span>
 
       {/* Out Tokens */}
-      <span
-        data-testid="meta-output-tokens"
-        className="inline-flex items-center gap-0.5 text-gray-400"
-      >
-        Out: {metadata.output_tokens}
+      <span className="inline-flex items-center gap-0.5 text-gray-400">
+        Out: <span data-testid="meta-output-tokens">{metadata.output_tokens}</span>
       </span>
 
       {/* Key ID if present */}

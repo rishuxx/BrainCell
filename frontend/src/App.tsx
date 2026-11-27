@@ -50,6 +50,7 @@ function AppLayout() {
   };
   const chatPage = authReady ? (
     <ChatPage
+      systemPrompt={systemPrompt}
       simulateFailure={simulateFailure}
       userId={user?.id}
       onChatSaved={() => setHistoryVersion((version) => version + 1)}
